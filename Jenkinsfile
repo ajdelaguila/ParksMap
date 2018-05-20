@@ -54,6 +54,7 @@ node('maven') {
     stage('MLB Parks - Running unit tests') {
       runUnitTests(mlbparksFolder, settingsFilename, sonarUrl, sonarToken)
     }
+  }
 }
 
 def getAppVersion(def appFolder) {
