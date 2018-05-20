@@ -6,7 +6,7 @@ node('maven') {
   def mlbparksFolder = "$checkoutFolder/mlbparks"
 
   // get annotated version to make sure every build has a different one
-  def appVersion = getAppVersion(parksmapFolder)
+  def appVersion = null
   def settingsFilename = null
   def mavenMirrorUrl = 'http://nexus.demo-cicd.svc:8081/repository/maven-all-public/'
   def sonarUrl = 'http://sonarqube.demo-cicd.svc:9000'
@@ -22,34 +22,48 @@ node('maven') {
       // Set explicitely the checkout folder for further references
       dir(checkoutFolder) {
         // checkout the source code using the git information provided by the github webhook
-        checkout scm
+        // This syntax allows to checkout also all annotated tags so get can get a different version each time.
+        checkout([
+            $class: 'GitSCM',
+            branches: scm.branches,
+            doGenerateSubmoduleConfigurations: scm.doGenerateSubmoduleConfigurations,
+            extensions: [[$class: 'CloneOption', noTags: false, shallow: false, depth: 0, reference: '']],
+            userRemoteConfigs: scm.userRemoteConfigs,
+         ])
       }
     }
     stage('Create settings file') {
       settingsFilename = prepareEnvironment(checkoutFolder, mavenMirrorUrl)
     }
-    stage('Set annotated version') {
+    stage('Get new version') {
+      appVersion = getAppVersion(parksmapFolder)
+    }
+    stage("Parks Map - set version $appVersion") {
       setAppVersion(parksmapFolder, appVersion, settingsFilename)
-      setAppVersion(nationalparksFolder, appVersion, settingsFilename)
-      setAppVersion(mlbparksFolder, appVersion, settingsFilename)
     }
     stage('Parks Map - Building') {
       build(parksmapFolder, settingsFilename)
-      parksmapBinaryArtifact = getBinaryArtifact(parksmapFolder)
+      parksmapBinaryArtifact = getBinaryArtifact(parksmapFolder, 'jar')
     }
     stage('Parks Map - Running unit tests') {
       runUnitTests(parksmapFolder, settingsFilename, sonarUrl, sonarToken)
     }
+    stage("National Parks - set version $appVersion") {
+      setAppVersion(nationalparksFolder, appVersion, settingsFilename)
+    }
     stage('National Parks - Building') {
       build(nationalparksFolder, settingsFilename)
-      nationalparksBinaryArtifact = getBinaryArtifact(nationalparksFolder)
+      nationalparksBinaryArtifact = getBinaryArtifact(nationalparksFolder, 'jar')
     }
     stage('National Parks - Running unit tests') {
       runUnitTests(nationalparksFolder, settingsFilename, sonarUrl, sonarToken)
     }
+    stage("MLB Parks - set version $appVersion") {
+      setAppVersion(mlbparksFolder, appVersion, settingsFilename)
+    }
     stage('MLB Parks - Building') {
       build(mlbparksFolder, settingsFilename)
-      nationalparksBinaryArtifact = getBinaryArtifact(mlbparksFolder)
+      nationalparksBinaryArtifact = getBinaryArtifact(mlbparksFolder, 'war')
     }
     stage('MLB Parks - Running unit tests') {
       runUnitTests(mlbparksFolder, settingsFilename, sonarUrl, sonarToken)
@@ -107,8 +121,8 @@ def runUnitTests(def appFolder, def settingsFilename, def sonarUrl, def sonarTok
   }
 }
 
-def getBinaryArtifact(def appFolder) {
-  return sh(script: "ls $appFolder/target/*.jar", returnStdout: true).trim()
+def getBinaryArtifact(def appFolder, def artifactExtension) {
+  return sh(script: "ls $appFolder/target/*.$artifactExtension", returnStdout: true).trim()
 }
 
 def getBaseImageName() {
