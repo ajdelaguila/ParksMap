@@ -1,7 +1,6 @@
 package com.openshift.evg.roadshow.model;
 
 import java.util.List;
-
 /**
  * Created by jmorales on 18/08/16.
  */

@@ -32,6 +32,10 @@
             <artifactId>spring-messaging</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-context</artifactId>
         </dependency>
@@ -79,6 +83,12 @@
             <artifactId>javax.ws.rs-api</artifactId>
             <version>2.0.1</version>
         </dependency>
+        
+       <dependency>
+        <groupId>junit</groupId>
+        <artifactId>junit</artifactId>
+      <version>${junit.version}</version>
+	    </dependency>        
     </dependencies>
 
 
@@ -101,6 +111,73 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
+			<plugin>
+			  <artifactId>maven-surefire-plugin</artifactId>
+			  <configuration>
+			    <excludedGroups>parksmap.IntegrationTest</excludedGroups>
+			  </configuration>
+			</plugin>
+	
+			<plugin>
+			  <artifactId>maven-failsafe-plugin</artifactId>
+			  <configuration>
+			    <includes>
+			      <include>**/*.java</include>
+			    </includes>
+			    <groups>parksmap.IntegrationTest</groups>
+<!-- 
+			    <systemProperties>
+            		<property>
+              			<name>parksmap.base.url</name>
+              			<value>http://parksmap-parksmap-project-example.apps.xiki-mitzi.acumena-os.com</value>
+
+
+            		</property>
+			  	</systemProperties>
+ -->			  			  
+			  </configuration>
+			  <executions>
+			    <execution>
+			      <goals>
+			        <goal>integration-test</goal>
+			        <goal>verify</goal>
+			      </goals>
+			    </execution>
+			  </executions>
+			</plugin>
+
+
+
+			<plugin>
+ 				<groupId>org.apache.tomcat.maven</groupId>
+ 				<artifactId>tomcat7-maven-plugin</artifactId>
+ 				<configuration>
+ 					<port>8080</port>
+ 					<path>/ws/data/all</path>
+ 				</configuration>
+ 				<executions>
+ 					<execution>
+ 						<id>start-tomcat</id>
+ 						<phase>pre-integration-test</phase>
+					 	<goals>
+					 	<goal>run</goal>
+					 	</goals>
+					 	<configuration>
+						 	<fork>true</fork>
+					 	</configuration>
+					</execution>
+					<execution>
+						<id>stop-tomcat</id>
+						<phase>post-integration-test</phase>
+						<goals>
+						<goal>shutdown</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>	 
+
+
+            
         </plugins>
     </build>
 </project>
