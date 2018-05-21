@@ -75,22 +75,6 @@ node('maven') {
       runUnitTests(mlbparksFolder, settingsFilename, sonarUrl, sonarToken)
     }
 
-    stage('Parks Map - binary build') {
-      def baseImage = getBaseImageName('jar')
-      def imageStream = "$imageStreamsPreffix-parksmap"
-      doBinaryBuild(imageStream, baseImage, parksmapBinaryArtifact, appVersion)
-    }
-    stage('National Parls - binary build') {
-      def baseImage = getBaseImageName('jar')
-      def imageStream = "$imageStreamsPreffix-nationalparks"
-      doBinaryBuild(imageStream, baseImage, nationalparksBinaryArtifact, appVersion)
-    }
-    stage('MLB Parks - binary build') {
-      def baseImage = getBaseImageName('war')
-      def imageStream = "$imageStreamsPreffix-mlbparks"
-      doBinaryBuild(imageStream, baseImage, mlbparksBinaryArtifact, appVersion)
-    }
-
     stage('Parks Map - push jar to Nexus') {
       uploadArtifactToNexus(parksmapFolder, settingsFilename, hostedMavenUrl, parksmapBinaryArtifact)
     }
@@ -99,6 +83,22 @@ node('maven') {
     }
     stage('MLB Parks - push war to Nexus') {
       uploadArtifactToNexus(mlbparksFolder, settingsFilename, hostedMavenUrl, mlbparksBinaryArtifact)
+    }
+    
+    stage('Parks Map - binary build') {
+      def baseImage = getBaseImageName('jar')
+      def imageStream = "$imageStreamsPreffix-parksmap"
+      //doBinaryBuild(imageStream, baseImage, parksmapBinaryArtifact, appVersion)
+    }
+    stage('National Parls - binary build') {
+      def baseImage = getBaseImageName('jar')
+      def imageStream = "$imageStreamsPreffix-nationalparks"
+      //doBinaryBuild(imageStream, baseImage, nationalparksBinaryArtifact, appVersion)
+    }
+    stage('MLB Parks - binary build') {
+      def baseImage = getBaseImageName('war')
+      def imageStream = "$imageStreamsPreffix-mlbparks"
+      //doBinaryBuild(imageStream, baseImage, mlbparksBinaryArtifact, appVersion)
     }
 
     // Execute all three next commands in another node with support for skopeo
