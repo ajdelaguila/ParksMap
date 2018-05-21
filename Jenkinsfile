@@ -8,7 +8,9 @@ node('maven') {
   // get annotated version to make sure every build has a different one
   def appVersion = null
   def settingsFilename = null
-  def mavenMirrorUrl = 'http://nexus.demo-cicd.svc:8081/repository/maven-all-public/'
+  def nexusServerUrl = 'http://nexus.demo-cicd.svc:8081/repository/'
+  def mavenMirrorUrl = nexusServerUrl + 'maven-all-public/'
+  def hostedMavenUrl = nexusServerUrl + 'maven-releases/'
   def nexusUsername = 'admin'
   def nexusPassword = 'admin123'
   def sonarUrl = 'http://sonarqube.demo-cicd.svc:9000'
@@ -37,7 +39,7 @@ node('maven') {
       }
     }
     stage('Create settings file') {
-      settingsFilename = prepareEnvironment(checkoutFolder, mavenMirrorUrl)
+      settingsFilename = prepareEnvironment(checkoutFolder, mavenMirrorUrl, nexusUsername, nexusPassword)
     }
     stage('Get new version') {
       appVersion = getAppVersion(parksmapFolder)
@@ -90,13 +92,13 @@ node('maven') {
     }
 
     stage('Parks Map - push jar to Nexus') {
-      uploadArtifactToNexus(parksmapFolder, settingsFilename, parksmapBinaryArtifact)
+      uploadArtifactToNexus(parksmapFolder, settingsFilename, hostedMavenUrl, parksmapBinaryArtifact)
     }
     stage('National Parls - push jar to Nexus') {
-      uploadArtifactToNexus(nationalparksFolder, settingsFilename, nationalparksBinaryArtifact)
+      uploadArtifactToNexus(nationalparksFolder, settingsFilename, hostedMavenUrl, nationalparksBinaryArtifact)
     }
     stage('MLB Parks - push war to Nexus') {
-      uploadArtifactToNexus(mlbparksFolder, settingsFilename, mlbparksBinaryArtifact)
+      uploadArtifactToNexus(mlbparksFolder, settingsFilename, hostedMavenUrl, mlbparksBinaryArtifact)
     }
 
     // Execute all three next commands in another node with support for skopeo
@@ -192,10 +194,10 @@ def doBinaryBuild(def imageStream, def baseImage, def binaryArtifact, def appVer
   """
 }
 
-def uploadArtifactToNexus(def appFolder, def settingsFilename, def artifactFilename) {
+def uploadArtifactToNexus(def appFolder, def settingsFilename, def repositoryUrl, def artifactFilename) {
   dir(appFolder) {
     sh """
-      mvn -s $settingsFilename deploy:deploy-file -DrepositoryId=nexus-maven-mirror -Dfile=$artifactFilename
+      mvn -s $settingsFilename deploy:deploy-file -DrepositoryId=nexus-maven-mirror -Durl=$repositoryUrl -Dfile=$artifactFilename
     """
   }
 }
