@@ -195,9 +195,14 @@ def doBinaryBuild(def imageStream, def baseImage, def binaryArtifact, def appVer
 }
 
 def uploadArtifactToNexus(def appFolder, def settingsFilename, def repositoryUrl, def artifactFilename) {
+  def goalToDeploy = 'deploy:deploy-file'
+  if ( artifactFilename.endsWith('.war') ) {
+    goalToDeploy = 'deploy'
+  }
+
   dir(appFolder) {
     sh """
-      mvn -s $settingsFilename deploy:deploy-file -DgeneratePom=false -DpomFile=pom.xml -DrepositoryId=nexus-maven-mirror -Durl=$repositoryUrl -Dfile=$artifactFilename
+      mvn -s $settingsFilename $goalToDeploy -DgeneratePom=false -DpomFile=pom.xml -DrepositoryId=nexus-maven-mirror -Durl=$repositoryUrl -Dfile=$artifactFilename
     """
   }
 }
