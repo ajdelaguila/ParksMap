@@ -69,7 +69,7 @@ node('maven') {
     }
     stage('MLB Parks - Building') {
       build(mlbparksFolder, settingsFilename)
-      nationalparksBinaryArtifact = getBinaryArtifact(mlbparksFolder, 'war')
+      mlbparksBinaryArtifact = getBinaryArtifact(mlbparksFolder, 'war')
     }
     stage('MLB Parks - Running unit tests') {
       runUnitTests(mlbparksFolder, settingsFilename, sonarUrl, sonarToken)
@@ -197,7 +197,7 @@ def doBinaryBuild(def imageStream, def baseImage, def binaryArtifact, def appVer
 def uploadArtifactToNexus(def appFolder, def settingsFilename, def repositoryUrl, def artifactFilename) {
   def goalToDeploy = 'deploy:deploy-file'
   if ( artifactFilename.endsWith('.war') ) {
-    goalToDeploy = 'deploy'
+    //goalToDeploy = 'deploy'
   }
 
   dir(appFolder) {
