@@ -84,7 +84,7 @@ node('maven') {
     stage('MLB Parks - push war to Nexus') {
       uploadArtifactToNexus(mlbparksFolder, settingsFilename, hostedMavenUrl, mlbparksBinaryArtifact)
     }
-    
+
     stage('Parks Map - binary build') {
       def baseImage = getBaseImageName('jar')
       def imageStream = "$imageStreamsPreffix-parksmap"
@@ -197,7 +197,7 @@ def doBinaryBuild(def imageStream, def baseImage, def binaryArtifact, def appVer
 def uploadArtifactToNexus(def appFolder, def settingsFilename, def repositoryUrl, def artifactFilename) {
   dir(appFolder) {
     sh """
-      mvn -s $settingsFilename deploy:deploy-file -DrepositoryId=nexus-maven-mirror -Durl=$repositoryUrl -Dfile=$artifactFilename
+      mvn -s $settingsFilename deploy:deploy-file -DgeneratePom=false -DpomFile=pom.xml -DrepositoryId=nexus-maven-mirror -Durl=$repositoryUrl -Dfile=$artifactFilename
     """
   }
 }
