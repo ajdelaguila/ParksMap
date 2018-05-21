@@ -1,129 +1,141 @@
 node('maven') {
-  def checkoutFolder = "/tmp/workspace/$env.JOB_NAME"
+  def parksmapImageStream = null
+  def nationalparksImageStream = null
+  def mlbparksImageStream = null
 
-  def parksmapFolder = "$checkoutFolder/parksmap"
-  def nationalparksFolder = "$checkoutFolder/nationalparks"
-  def mlbparksFolder = "$checkoutFolder/mlbparks"
+  try {
+    def checkoutFolder = "/tmp/workspace/$env.JOB_NAME"
 
-  // get annotated version to make sure every build has a different one
-  def appVersion = null
-  def settingsFilename = null
-  def nexusServerUrl = 'http://nexus.demo-cicd.svc:8081/repository/'
-  def mavenMirrorUrl = nexusServerUrl + 'maven-all-public/'
-  def hostedMavenUrl = nexusServerUrl + 'maven-releases/'
-  def nexusUsername = 'admin'
-  def nexusPassword = 'admin123'
-  def sonarUrl = 'http://sonarqube.demo-cicd.svc:9000'
-  def sonarToken = '29c8f656bcf05f4f134273e697e856ed8536f83f'
+    def parksmapFolder = "$checkoutFolder/parksmap"
+    def nationalparksFolder = "$checkoutFolder/nationalparks"
+    def mlbparksFolder = "$checkoutFolder/mlbparks"
 
-  def parksmapBinaryArtifact = null
-  def nationalparksBinaryArtifact = null
-  def mlbparksBinaryArtifact = null
+    // get annotated version to make sure every build has a different one
+    def appVersion = null
+    def settingsFilename = null
+    def nexusServerUrl = 'http://nexus.demo-cicd.svc:8081/repository/'
+    def mavenMirrorUrl = nexusServerUrl + 'maven-all-public/'
+    def hostedMavenUrl = nexusServerUrl + 'maven-releases/'
+    def nexusUsername = 'admin'
+    def nexusPassword = 'admin123'
+    def sonarUrl = 'http://sonarqube.demo-cicd.svc:9000'
+    def sonarToken = '29c8f656bcf05f4f134273e697e856ed8536f83f'
 
-  def imageStreamsPreffix = "$env.JOB_NAME-$env.JOB_NUMBER"
+    def parksmapBinaryArtifact = null
+    def nationalparksBinaryArtifact = null
+    def mlbparksBinaryArtifact = null
 
-  // Start session with the service account jenkins which is the one configured by default for this builder
-  openshift.withCluster() {
-    stage('Checkout code') {
-      // Set explicitely the checkout folder for further references
-      dir(checkoutFolder) {
-        // checkout the source code using the git information provided by the github webhook
-        // This syntax allows to checkout also all annotated tags so get can get a different version each time.
-        checkout([
-            $class: 'GitSCM',
-            branches: scm.branches,
-            doGenerateSubmoduleConfigurations: scm.doGenerateSubmoduleConfigurations,
-            extensions: [[$class: 'CloneOption', noTags: false, shallow: false, depth: 0, reference: '']],
-            userRemoteConfigs: scm.userRemoteConfigs,
-         ])
+    def imageStreamsPreffix = "$env.JOB_NAME-$env.JOB_NUMBER"
+
+    // Start session with the service account jenkins which is the one configured by default for this builder
+    openshift.withCluster() {
+      stage('Checkout code') {
+        // Set explicitely the checkout folder for further references
+        dir(checkoutFolder) {
+          // checkout the source code using the git information provided by the github webhook
+          // This syntax allows to checkout also all annotated tags so get can get a different version each time.
+          checkout([
+              $class: 'GitSCM',
+              branches: scm.branches,
+              doGenerateSubmoduleConfigurations: scm.doGenerateSubmoduleConfigurations,
+              extensions: [[$class: 'CloneOption', noTags: false, shallow: false, depth: 0, reference: '']],
+              userRemoteConfigs: scm.userRemoteConfigs,
+           ])
+        }
       }
-    }
-    stage('Create settings file') {
-      settingsFilename = prepareEnvironment(checkoutFolder, mavenMirrorUrl, nexusUsername, nexusPassword)
-    }
-    stage('Get new version') {
-      appVersion = getAppVersion(parksmapFolder)
-    }
-    stage("Parks Map - set version $appVersion") {
-      setAppVersion(parksmapFolder, appVersion, settingsFilename)
-    }
-    stage('Parks Map - Building') {
-      build(parksmapFolder, settingsFilename)
-      parksmapBinaryArtifact = getBinaryArtifact(parksmapFolder, 'jar')
-    }
-    stage('Parks Map - Running unit tests') {
-      runUnitTests(parksmapFolder, settingsFilename, sonarUrl, sonarToken)
-    }
-    stage("National Parks - set version $appVersion") {
-      setAppVersion(nationalparksFolder, appVersion, settingsFilename)
-    }
-    stage('National Parks - Building') {
-      build(nationalparksFolder, settingsFilename)
-      nationalparksBinaryArtifact = getBinaryArtifact(nationalparksFolder, 'jar')
-    }
-    stage('National Parks - Running unit tests') {
-      runUnitTests(nationalparksFolder, settingsFilename, sonarUrl, sonarToken)
-    }
-    stage("MLB Parks - set version $appVersion") {
-      setAppVersion(mlbparksFolder, appVersion, settingsFilename)
-    }
-    stage('MLB Parks - Building') {
-      build(mlbparksFolder, settingsFilename)
-      mlbparksBinaryArtifact = getBinaryArtifact(mlbparksFolder, 'war')
-    }
-    stage('MLB Parks - Running unit tests') {
-      runUnitTests(mlbparksFolder, settingsFilename, sonarUrl, sonarToken)
-    }
-
-    stage('Parks Map - push jar to Nexus') {
-      uploadArtifactToNexus(parksmapFolder, settingsFilename, hostedMavenUrl, parksmapBinaryArtifact)
-    }
-    stage('National Parls - push jar to Nexus') {
-      uploadArtifactToNexus(nationalparksFolder, settingsFilename, hostedMavenUrl, nationalparksBinaryArtifact)
-    }
-    stage('MLB Parks - push war to Nexus') {
-      uploadArtifactToNexus(mlbparksFolder, settingsFilename, hostedMavenUrl, mlbparksBinaryArtifact)
-    }
-
-    stage('Parks Map - binary build') {
-      def baseImage = getBaseImageName('jar')
-      def imageStream = "$imageStreamsPreffix-parksmap"
-      //doBinaryBuild(imageStream, baseImage, parksmapBinaryArtifact, appVersion)
-    }
-    stage('National Parls - binary build') {
-      def baseImage = getBaseImageName('jar')
-      def imageStream = "$imageStreamsPreffix-nationalparks"
-      //doBinaryBuild(imageStream, baseImage, nationalparksBinaryArtifact, appVersion)
-    }
-    stage('MLB Parks - binary build') {
-      def baseImage = getBaseImageName('war')
-      def imageStream = "$imageStreamsPreffix-mlbparks"
-      //doBinaryBuild(imageStream, baseImage, mlbparksBinaryArtifact, appVersion)
-    }
-
-    // Execute all three next commands in another node with support for skopeo
-    node('skopeo') {
-      stage('Parks Map - push docker image to Nexus') {
-        // Push to nexus and remove locally
+      stage('Create settings file') {
+        settingsFilename = prepareEnvironment(checkoutFolder, mavenMirrorUrl, nexusUsername, nexusPassword)
       }
-      stage('National Parls - push docker image to Nexus') {
-        // Push to nexus and remove locally
+      stage('Get new version') {
+        appVersion = getAppVersion(parksmapFolder)
       }
-      stage('MLB Parks - push docker image to Nexus') {
-        // Push to nexus and remove locally
+      stage("Parks Map - set version $appVersion") {
+        setAppVersion(parksmapFolder, appVersion, settingsFilename)
       }
+      stage('Parks Map - Building') {
+        build(parksmapFolder, settingsFilename)
+        parksmapBinaryArtifact = getBinaryArtifact(parksmapFolder, 'jar')
+      }
+      stage('Parks Map - Running unit tests') {
+        runUnitTests(parksmapFolder, settingsFilename, sonarUrl, sonarToken)
+      }
+      stage("National Parks - set version $appVersion") {
+        setAppVersion(nationalparksFolder, appVersion, settingsFilename)
+      }
+      stage('National Parks - Building') {
+        build(nationalparksFolder, settingsFilename)
+        nationalparksBinaryArtifact = getBinaryArtifact(nationalparksFolder, 'jar')
+      }
+      stage('National Parks - Running unit tests') {
+        runUnitTests(nationalparksFolder, settingsFilename, sonarUrl, sonarToken)
+      }
+      stage("MLB Parks - set version $appVersion") {
+        setAppVersion(mlbparksFolder, appVersion, settingsFilename)
+      }
+      stage('MLB Parks - Building') {
+        build(mlbparksFolder, settingsFilename)
+        mlbparksBinaryArtifact = getBinaryArtifact(mlbparksFolder, 'war')
+      }
+      stage('MLB Parks - Running unit tests') {
+        runUnitTests(mlbparksFolder, settingsFilename, sonarUrl, sonarToken)
+      }
+
+      stage('Parks Map - push jar to Nexus') {
+        uploadArtifactToNexus(parksmapFolder, settingsFilename, hostedMavenUrl, parksmapBinaryArtifact)
+      }
+      stage('National Parls - push jar to Nexus') {
+        uploadArtifactToNexus(nationalparksFolder, settingsFilename, hostedMavenUrl, nationalparksBinaryArtifact)
+      }
+      stage('MLB Parks - push war to Nexus') {
+        uploadArtifactToNexus(mlbparksFolder, settingsFilename, hostedMavenUrl, mlbparksBinaryArtifact)
+      }
+
+      stage('Parks Map - binary build') {
+        def baseImage = getBaseImageName('jar')
+        parksmapImageStream = "$imageStreamsPreffix-parksmap"
+        //doBinaryBuild(imageStream, baseImage, parksmapBinaryArtifact, appVersion)
+      }
+      stage('National Parls - binary build') {
+        def baseImage = getBaseImageName('jar')
+        nationalparksImageStream = "$imageStreamsPreffix-nationalparks"
+        //doBinaryBuild(imageStream, baseImage, nationalparksBinaryArtifact, appVersion)
+      }
+      stage('MLB Parks - binary build') {
+        def baseImage = getBaseImageName('war')
+        mlbparksImageStream = "$imageStreamsPreffix-mlbparks"
+        //doBinaryBuild(imageStream, baseImage, mlbparksBinaryArtifact, appVersion)
+      }
+
+      // Execute all three next commands in another node with support for skopeo
+      node('skopeo') {
+        stage('Parks Map - push docker image to Nexus') {
+          // Push to nexus and remove locally
+        }
+        stage('National Parls - push docker image to Nexus') {
+          // Push to nexus and remove locally
+        }
+        stage('MLB Parks - push docker image to Nexus') {
+          // Push to nexus and remove locally
+        }
+      }
+
+      // Single deployment into DEV
+
+      // Ask for manual approval before going to TEST
+
+      // Single deployment into TEST
+
+      // Ask for manual approval before going to LIVE
+
+      // Blue/Green deployment into LIVE
+
     }
-
-    // Single deployment into DEV
-
-    // Ask for manual approval before going to TEST
-
-    // Single deployment into TEST
-
-    // Ask for manual approval before going to LIVE
-
-    // Blue/Green deployment into LIVE
-
+  }
+  finally {
+    // Clean up local image streams if they exists
+    //parksmapImageStream
+    //nationalparksImageStream
+    //mlbparksImageStream
   }
 }
 
@@ -187,22 +199,28 @@ def getBaseImageName(def artifactExtension) {
   return (artifactExtension == 'jar') ? 'registry.access.redhat.com/redhat-openjdk-18/openjdk18-openshift:1.3' : 'registry.access.redhat.com/jboss-eap-7/eap71-openshift:1.2'
 }
 
+def uploadArtifactToNexus(def appFolder, def settingsFilename, def repositoryUrl, def artifactFilename) {
+  dir(appFolder) {
+    sh """
+      mvn -s $settingsFilename deploy:deploy-file -DgeneratePom=false -DpomFile=pom.xml -DrepositoryId=nexus-maven-mirror -Durl=$repositoryUrl -Dfile=$artifactFilename
+    """
+  }
+}
+
 def doBinaryBuild(def imageStream, def baseImage, def binaryArtifact, def appVersion) {
   sh """
-    oc start-build bc/$buildConfig --from-file="$artifactInfo.path" --follow -n $projectName
-    oc tag $imageStream:latest $imageStream:$tagName -n $projectName
+    //creates the image imageStream
+    //creates the binary build
+    //oc start-build bc/$buildConfig --from-file="$artifactInfo.path" --follow -n $projectName
+    //oc tag $imageStream:latest $imageStream:$tagName -n $projectName
   """
 }
 
-def uploadArtifactToNexus(def appFolder, def settingsFilename, def repositoryUrl, def artifactFilename) {
-  def goalToDeploy = 'deploy:deploy-file'
-  if ( artifactFilename.endsWith('.war') ) {
-    //goalToDeploy = 'deploy'
-  }
-
-  dir(appFolder) {
-    sh """
-      mvn -s $settingsFilename $goalToDeploy -DgeneratePom=false -DpomFile=pom.xml -DrepositoryId=nexus-maven-mirror -Durl=$repositoryUrl -Dfile=$artifactFilename
-    """
-  }
+def uploadOcpImageToNexus(def openshiftStreamTag, def nexusImageStreamTag, def nexusCredentials) {
+  def openshiftCredentials = sh(script: "oc whoami -t", returnStdout: true).trim()
+  def srcCredentials = 'openshift:\\' + openshiftCredentials
+  sh """
+    set +x
+    skopeo copy --src-tls-verify=false --dest-tls-verify=false --src-creds=$srcCredentials --dest-creds=$nexusCredentials docker://docker-registry.default.svc.cluster.local:5000/demo-cicd/$openshiftStreamTag docker://$nexusImageStreamTag
+  """
 }
