@@ -130,13 +130,9 @@ node('maven') {
         }
         finally {
           // Clean up local image streams and build configurations if they exist
-          openshift.selector( "bc/$parksmapImageStream" ).delete( '--ignore-not-present' )
-          openshift.selector( "bc/$nationalparksImageStream" ).delete( '--ignore-not-present' )
-          openshift.selector( "bc/$mlbparksImageStream" ).delete( '--ignore-not-present' )
-
-          openshift.selector( "is/$parksmapImageStream" ).delete( '--ignore-not-present' )
-          openshift.selector( "is/$nationalparksImageStream" ).delete( '--ignore-not-present' )
-          openshift.selector( "is/$mlbparksImageStream" ).delete( '--ignore-not-present' )
+          openshift.selector( "bc/$parksmapImageStream" ).delete( "--cascade=true", "--ignore-not-found=true" )
+          openshift.selector( "bc/$nationalparksImageStream" ).delete( "--cascade=true", "--ignore-not-found=true" )
+          openshift.selector( "bc/$mlbparksImageStream" ).delete( "--cascade=true", "--ignore-not-found=true" )
         }
       }
 
