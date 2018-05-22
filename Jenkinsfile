@@ -14,9 +14,9 @@ node('maven') {
     // get annotated version to make sure every build has a different one
     def appVersion = null
     def settingsFilename = null
-    def nexusServerUrl = 'http://nexus.' + openshiftCicdProjectName + '.svc:8081/'
-    def mavenMirrorUrl = nexusServerUrl + 'repository/maven-all-public/'
-    def hostedMavenUrl = nexusServerUrl + 'repository/maven-releases/'
+    def nexusServerUrl = 'nexus.' + openshiftCicdProjectName + '.svc:8081/'
+    def mavenMirrorUrl = 'http://' + nexusServerUrl + 'repository/maven-all-public/'
+    def hostedMavenUrl = 'http://' + nexusServerUrl + 'repository/maven-releases/'
     def dockerRegistryUrl = nexusServerUrl + "repository/mitzi/$openshiftLiveProjectName/"
     def openshiftRegistryUrl = 'docker-registry.default.svc:5000/' + openshiftCicdProjectName + '/'
     def nexusUsername = 'admin'
