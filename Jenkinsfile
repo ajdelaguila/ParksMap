@@ -102,17 +102,17 @@ node('maven') {
           stage('Parks Map - binary build') {
             def baseImage = getBaseImageName('jar')
             parksmapImageStream = "$imageStreamsPreffix-parksmap"
-            doBinaryBuild(imageStream, baseImage, parksmapBinaryArtifact, appVersion)
+            doBinaryBuild(parksmapImageStream, baseImage, parksmapBinaryArtifact, appVersion)
           }
           stage('National Parls - binary build') {
             def baseImage = getBaseImageName('jar')
             nationalparksImageStream = "$imageStreamsPreffix-nationalparks"
-            doBinaryBuild(imageStream, baseImage, nationalparksBinaryArtifact, appVersion)
+            doBinaryBuild(nationalparksImageStream, baseImage, nationalparksBinaryArtifact, appVersion)
           }
           stage('MLB Parks - binary build') {
             def baseImage = getBaseImageName('war')
             mlbparksImageStream = "$imageStreamsPreffix-mlbparks"
-            doBinaryBuild(imageStream, baseImage, mlbparksBinaryArtifact, appVersion)
+            doBinaryBuild(mlbparksImageStream, baseImage, mlbparksBinaryArtifact, appVersion)
           }
 
           // Execute all three next commands in another node with support for skopeo
