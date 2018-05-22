@@ -28,7 +28,7 @@ node('maven') {
     def nationalparksBinaryArtifact = null
     def mlbparksBinaryArtifact = null
 
-    def imageStreamsPreffix = "$env.JOB_NAME-$env.JOB_NUMBER"
+    def imageStreamsPreffix = "$env.JOB_NAME-$env.BUILD_NUMBER"
 
     // Start session with the service account jenkins which is the one configured by default for this builder
     openshift.withCluster() {
@@ -223,7 +223,10 @@ def uploadArtifactToNexus(def appFolder, def settingsFilename, def repositoryUrl
 
 def doBinaryBuild(def imageStream, def baseImage, def binaryArtifact, def appVersion) {
   // Creation of the build config
-  openshift.newBuild("--allow-missing-imagestream-tags=true", "--binary=true", "--docker-image=$baseImage", "--name=$imageStream", "--to='$imageStream:$appVersion'")
+  openshift.newBuild("--allow-missing-imagestream-tags=true", "--binary=true", "--docker-image='$baseImage'", "--name='$imageStream'", "--to='$imageStream:$appVersion'")
+
+input "Continue?"
+
   // Start the binary build
   openshift.startBuild("bc/$imageStream", "--from-file='$binaryArtifact'", "--follow=true")
 }
