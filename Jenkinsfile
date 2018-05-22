@@ -97,7 +97,7 @@ node('maven') {
       def nationalparksImageStream = null
       def mlbparksImageStream = null
 
-      openshift.withProject( openshiftCicdProjectName )
+      openshift.withProject( openshiftCicdProjectName ) {
         try {
           stage('Parks Map - binary build') {
             def baseImage = getBaseImageName('jar')
