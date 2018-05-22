@@ -133,6 +133,10 @@ node('maven') {
           openshift.selector( "bc/$parksmapImageStream" ).delete( "--cascade=true", "--ignore-not-found=true" )
           openshift.selector( "bc/$nationalparksImageStream" ).delete( "--cascade=true", "--ignore-not-found=true" )
           openshift.selector( "bc/$mlbparksImageStream" ).delete( "--cascade=true", "--ignore-not-found=true" )
+
+          openshift.selector( "is/$parksmapImageStream" ).delete( "--cascade=true", "--ignore-not-found=true" )
+          openshift.selector( "is/$nationalparksImageStream" ).delete( "--cascade=true", "--ignore-not-found=true" )
+          openshift.selector( "is/$mlbparksImageStream" ).delete( "--cascade=true", "--ignore-not-found=true" )
         }
       }
 
@@ -223,7 +227,7 @@ def uploadArtifactToNexus(def appFolder, def settingsFilename, def repositoryUrl
 
 def doBinaryBuild(def imageStream, def baseImage, def binaryArtifact, def appVersion) {
   // Creation of the build config
-  openshift.newBuild("--allow-missing-imagestream-tags=true", "--binary=true", "--docker-image='$baseImage'", "--name='$imageStream'", "--to='$imageStream:$appVersion'")
+  openshift.raw("new-build", "--allow-missing-imagestream-tags=true", "--binary=true", "--docker-image='$baseImage'", "--name='$imageStream'", "--to='$imageStream:$appVersion'")
 
 input "Continue?"
 
