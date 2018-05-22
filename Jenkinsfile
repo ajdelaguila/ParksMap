@@ -14,10 +14,11 @@ node('maven') {
     // get annotated version to make sure every build has a different one
     def appVersion = null
     def settingsFilename = null
-    def nexusServerUrl = 'nexus.' + openshiftCicdProjectName + '.svc:8081/'
-    def mavenMirrorUrl = 'http://' + nexusServerUrl + 'repository/maven-all-public/'
-    def hostedMavenUrl = 'http://' + nexusServerUrl + 'repository/maven-releases/'
-    def dockerRegistryUrl = nexusServerUrl + "repository/mitzi/$openshiftLiveProjectName/"
+    def mavenServerUrl = 'http://nexus.' + openshiftCicdProjectName + '.svc:8081/'
+    def mavenMirrorUrl = mavenServerUrl + 'repository/maven-all-public/'
+    def hostedMavenUrl = mavenServerUrl + 'repository/maven-releases/'
+    def dockerServerUrl = 'nexus.' + openshiftCicdProjectName + '.svc:8082/'
+    def dockerRegistryUrl = dockerServerUrl + "$openshiftLiveProjectName/"
     def openshiftRegistryUrl = 'docker-registry.default.svc:5000/' + openshiftCicdProjectName + '/'
     def nexusUsername = 'admin'
     def nexusPassword = 'admin123'
@@ -129,8 +130,6 @@ node('maven') {
           }
         }
         finally {
-          input "Continue?"
-
           // Clean up local image streams and build configurations if they exist
           deleteObjects( "bc/$parksmapImageStream" )
           deleteObjects( "is/$parksmapImageStream" )
@@ -234,17 +233,11 @@ def doBinaryBuild(def imageStream, def baseImage, def binaryArtifact, def appVer
 }
 
 def uploadOcpImageToNexus(def openshiftStreamTag, def nexusImageStreamTag, def nexusCredentials) {
-try {
-    def openshiftCredentials = sh(script: "oc whoami -t", returnStdout: true).trim()
-  def srcCredentials = 'openshift:\\' + openshiftCredentials
+  def srcCredentials = sh(script: "oc whoami", returnStdout: true).trim() + ':' + sh(script: "oc whoami -t", returnStdout: true).trim()
   sh """
     echo set +x
     skopeo copy --src-tls-verify=false --dest-tls-verify=false --src-creds=$srcCredentials --dest-creds=$nexusCredentials docker://$openshiftStreamTag docker://$nexusImageStreamTag
   """
-}
-finally{
-  input "aa"
-}
 }
 
 def deleteObjects( def selectorString ) {
