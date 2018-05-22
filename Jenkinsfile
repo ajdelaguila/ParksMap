@@ -132,23 +132,12 @@ node('maven') {
           input "Continue?"
 
           // Clean up local image streams and build configurations if they exist
-          def bcs = openshift.selector( "bc/$parksmapImageStream" )
-          if (bcs.count()) {
-            bcs.delete( "--cascade=true", "--ignore-not-found=true" )
-            openshift.selector( "is/$parksmapImageStream" ).delete( "--cascade=true", "--ignore-not-found=true" )
-          }
-
-          bcs = openshift.selector( "bc/$nationalparksImageStream" )
-          if (bcs.count()) {
-            bcs.delete( "--cascade=true", "--ignore-not-found=true" )
-            openshift.selector( "is/$nationalparksImageStream" ).delete( "--cascade=true", "--ignore-not-found=true" )
-          }
-
-          bcs = openshift.selector( "bc/$mlbparksImageStream" )
-          if (bcs.count()) {
-            bcs.delete( "--cascade=true", "--ignore-not-found=true" )
-            openshift.selector( "is/$mlbparksImageStream" ).delete( "--cascade=true", "--ignore-not-found=true" )
-          }
+          deleteObjects( "bc/$parksmapImageStream" )
+          deleteObjects( "is/$parksmapImageStream" )
+          deleteObjects( "bc/$nationalparksImageStream" )
+          deleteObjects( "is/$nationalparksImageStream" )
+          deleteObjects( "bc/$mlbparksImageStream" )
+          deleteObjects( "is/$mlbparksImageStream" )
         }
       }
 
@@ -251,4 +240,11 @@ def uploadOcpImageToNexus(def openshiftStreamTag, def nexusImageStreamTag, def n
     set +x
     skopeo copy --src-tls-verify=false --dest-tls-verify=false --src-creds=$srcCredentials --dest-creds=$nexusCredentials docker://$openshiftStreamTag docker://$nexusImageStreamTag
   """
+}
+
+def deleteObjects( def selectorString ) {
+  def objs = openshift.selector( selectorString )
+  objs.withEach {
+    it.delete( "--cascade=true", "--ignore-not-found=true" )
+  }
 }
