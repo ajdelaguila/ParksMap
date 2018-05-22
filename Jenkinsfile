@@ -18,10 +18,10 @@ node('maven') {
     def mavenMirrorUrl = nexusServerUrl + 'repository/maven-all-public/'
     def hostedMavenUrl = nexusServerUrl + 'repository/maven-releases/'
     def dockerRegistryUrl = nexusServerUrl + "repository/mitzi/$openshiftLiveProjectName/"
-    def openshiftRegistryUrl = "docker-registry.default.svc:5000/$openshiftCicdProjectName/"
+    def openshiftRegistryUrl = 'docker-registry.default.svc:5000/' + openshiftCicdProjectName + '/'
     def nexusUsername = 'admin'
     def nexusPassword = 'admin123'
-    def sonarUrl = "http://sonarqube.$openshiftCicdProjectName.svc:9000"
+    def sonarUrl = 'http://sonarqube.' + openshiftCicdProjectName + '.svc:9000'
     def sonarToken = '29c8f656bcf05f4f134273e697e856ed8536f83f'
 
     def parksmapBinaryArtifact = null
