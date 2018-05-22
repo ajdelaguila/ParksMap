@@ -227,7 +227,10 @@ def uploadArtifactToNexus(def appFolder, def settingsFilename, def repositoryUrl
 
 def doBinaryBuild(def imageStream, def baseImage, def binaryArtifact, def appVersion) {
   // Creation of the build config
-  openshift.raw("new-build", "--allow-missing-imagestream-tags=true", "--binary=true", "--docker-image='$baseImage'", "--name='$imageStream'", "--to='$imageStream:$appVersion'")
+  //openshift.raw("new-build", "--allow-missing-imagestream-tags=true", "--binary=true", "--docker-image='$baseImage'", "--name='$imageStream'", "--to='$imageStream:$appVersion'")
+  sh """
+    oc new-build --allow-missing-imagestream-tags=true --binary=true --docker-image='$baseImage' --name='$imageStream' --to='$imageStream:$appVersion'
+  """
 
 input "Continue?"
 
