@@ -129,6 +129,8 @@ node('maven') {
           }
         }
         finally {
+          input "Continue?"
+
           // Clean up local image streams and build configurations if they exist
           openshift.selector( "bc/$parksmapImageStream" ).delete( "--cascade=true", "--ignore-not-found=true" )
           openshift.selector( "bc/$nationalparksImageStream" ).delete( "--cascade=true", "--ignore-not-found=true" )
@@ -229,7 +231,7 @@ def doBinaryBuild(def imageStream, def baseImage, def binaryArtifact, def appVer
   // Creation of the build config
   openshift.newBuild("--allow-missing-imagestream-tags=true", "--binary=true", "-i '$baseImage'", "--name='$imageStream'", "--to='$imageStream:$appVersion'")
   // Start the binary build
-  openshift.startBuild("bc/$imageStream", "--from-file='$binaryArtifact'", "--follow=true")
+  openshift.startBuild("bc/$imageStream", "--from-file='$binaryArtifact'", "--follow")
 }
 
 def uploadOcpImageToNexus(def openshiftStreamTag, def nexusImageStreamTag, def nexusCredentials) {
