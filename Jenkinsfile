@@ -214,7 +214,7 @@ def getBinaryArtifact(def appFolder, def artifactExtension) {
 }
 
 def getBaseImageName(def artifactExtension) {
-  return (artifactExtension == 'jar') ? 'registry.access.redhat.com/redhat-openjdk-18/openjdk18-openshift:1.3' : 'registry.access.redhat.com/jboss-eap-7/eap71-openshift:1.2'
+  return (artifactExtension == 'jar') ? 'openjdk18-openshift:1.3' : 'eap71-openshift:1.2'
 }
 
 def uploadArtifactToNexus(def appFolder, def settingsFilename, def repositoryUrl, def artifactFilename) {
@@ -227,10 +227,7 @@ def uploadArtifactToNexus(def appFolder, def settingsFilename, def repositoryUrl
 
 def doBinaryBuild(def imageStream, def baseImage, def binaryArtifact, def appVersion) {
   // Creation of the build config
-  //openshift.raw("new-build", "--allow-missing-imagestream-tags=true", "--binary=true", "--docker-image='$baseImage'", "--name='$imageStream'", "--to='$imageStream:$appVersion'")
-  sh """
-    oc new-build --allow-missing-imagestream-tags=true --binary=true --docker-image='$baseImage' --name='$imageStream' --to='$imageStream:$appVersion'
-  """
+  openshift.raw("new-build", "--allow-missing-imagestream-tags=true", "--binary=true", "--image-stream='$baseImage'", "--name='$imageStream'", "--to='$imageStream:$appVersion'")
 
 input "Continue?"
 
