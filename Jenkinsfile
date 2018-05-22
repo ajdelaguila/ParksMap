@@ -237,7 +237,7 @@ def uploadOcpImageToNexus(def openshiftStreamTag, def nexusImageStreamTag, def n
   def openshiftCredentials = sh(script: "oc whoami -t", returnStdout: true).trim()
   def srcCredentials = 'openshift:\\' + openshiftCredentials
   sh """
-    set +x
+    echo set +x
     skopeo copy --src-tls-verify=false --dest-tls-verify=false --src-creds=$srcCredentials --dest-creds=$nexusCredentials docker://$openshiftStreamTag docker://$nexusImageStreamTag
   """
 }
