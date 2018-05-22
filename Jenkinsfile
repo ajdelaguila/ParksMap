@@ -1,8 +1,4 @@
 node('maven') {
-  def parksmapImageStream = null
-  def nationalparksImageStream = null
-  def mlbparksImageStream = null
-
   try {
     def checkoutFolder = "/tmp/workspace/$env.JOB_NAME"
 
@@ -10,15 +6,22 @@ node('maven') {
     def nationalparksFolder = "$checkoutFolder/nationalparks"
     def mlbparksFolder = "$checkoutFolder/mlbparks"
 
+    def openshiftCicdProjectName = 'demo-cicd'
+    def openshiftDevProjectName = 'parksmap-dev'
+    def openshiftTestProjectName = 'parksmap-test'
+    def openshiftLiveProjectName = 'parksmap-live'
+
     // get annotated version to make sure every build has a different one
     def appVersion = null
     def settingsFilename = null
-    def nexusServerUrl = 'http://nexus.demo-cicd.svc:8081/repository/'
-    def mavenMirrorUrl = nexusServerUrl + 'maven-all-public/'
-    def hostedMavenUrl = nexusServerUrl + 'maven-releases/'
+    def nexusServerUrl = "http://nexus.$openshiftCicdProjectName.svc:8081/"
+    def mavenMirrorUrl = nexusServerUrl + 'repository/maven-all-public/'
+    def hostedMavenUrl = nexusServerUrl + 'repository/maven-releases/'
+    def dockerRegistryUrl = nexusServerUrl + "repository/mitzi/$openshiftLiveProjectName/"
+    def openshiftRegistryUrl = "docker-registry.default.svc:5000/$openshiftCicdProjectName/"
     def nexusUsername = 'admin'
     def nexusPassword = 'admin123'
-    def sonarUrl = 'http://sonarqube.demo-cicd.svc:9000'
+    def sonarUrl = "http://sonarqube.$openshiftCicdProjectName.svc:9000"
     def sonarToken = '29c8f656bcf05f4f134273e697e856ed8536f83f'
 
     def parksmapBinaryArtifact = null
@@ -90,32 +93,50 @@ node('maven') {
         uploadArtifactToNexus(mlbparksFolder, settingsFilename, hostedMavenUrl, mlbparksBinaryArtifact)
       }
 
-      stage('Parks Map - binary build') {
-        def baseImage = getBaseImageName('jar')
-        parksmapImageStream = "$imageStreamsPreffix-parksmap"
-        //doBinaryBuild(imageStream, baseImage, parksmapBinaryArtifact, appVersion)
-      }
-      stage('National Parls - binary build') {
-        def baseImage = getBaseImageName('jar')
-        nationalparksImageStream = "$imageStreamsPreffix-nationalparks"
-        //doBinaryBuild(imageStream, baseImage, nationalparksBinaryArtifact, appVersion)
-      }
-      stage('MLB Parks - binary build') {
-        def baseImage = getBaseImageName('war')
-        mlbparksImageStream = "$imageStreamsPreffix-mlbparks"
-        //doBinaryBuild(imageStream, baseImage, mlbparksBinaryArtifact, appVersion)
-      }
+      def parksmapImageStream = null
+      def nationalparksImageStream = null
+      def mlbparksImageStream = null
 
-      // Execute all three next commands in another node with support for skopeo
-      node('skopeo') {
-        stage('Parks Map - push docker image to Nexus') {
-          // Push to nexus and remove locally
+      openshift.withProject( openshiftCicdProjectName )
+        try {
+          stage('Parks Map - binary build') {
+            def baseImage = getBaseImageName('jar')
+            parksmapImageStream = "$imageStreamsPreffix-parksmap"
+            doBinaryBuild(imageStream, baseImage, parksmapBinaryArtifact, appVersion)
+          }
+          stage('National Parls - binary build') {
+            def baseImage = getBaseImageName('jar')
+            nationalparksImageStream = "$imageStreamsPreffix-nationalparks"
+            doBinaryBuild(imageStream, baseImage, nationalparksBinaryArtifact, appVersion)
+          }
+          stage('MLB Parks - binary build') {
+            def baseImage = getBaseImageName('war')
+            mlbparksImageStream = "$imageStreamsPreffix-mlbparks"
+            doBinaryBuild(imageStream, baseImage, mlbparksBinaryArtifact, appVersion)
+          }
+
+          // Execute all three next commands in another node with support for skopeo
+          node('skopeo') {
+            stage('Parks Map - push docker image to Nexus') {
+              uploadOcpImageToNexus(openshiftRegistryUrl + parksmapImageStream + ':' + appVersion, dockerRegistryUrl + 'parksmap:' + appVersion, "$nexusUsername:$nexusPassword")
+            }
+            stage('National Parls - push docker image to Nexus') {
+              uploadOcpImageToNexus(openshiftRegistryUrl + nationalparksImageStream + ':' + appVersion, dockerRegistryUrl + 'nationalparks:' + appVersion, "$nexusUsername:$nexusPassword")
+            }
+            stage('MLB Parks - push docker image to Nexus') {
+              uploadOcpImageToNexus(openshiftRegistryUrl + mlbparksImageStream + ':' + appVersion, dockerRegistryUrl + 'mlbparks:' + appVersion, "$nexusUsername:$nexusPassword")
+            }
+          }
         }
-        stage('National Parls - push docker image to Nexus') {
-          // Push to nexus and remove locally
-        }
-        stage('MLB Parks - push docker image to Nexus') {
-          // Push to nexus and remove locally
+        finally {
+          // Clean up local image streams and build configurations if they exist
+          openshift.selector( "bc/$parksmapImageStream" ).delete( '--ignore-not-present' )
+          openshift.selector( "bc/$nationalparksImageStream" ).delete( '--ignore-not-present' )
+          openshift.selector( "bc/$mlbparksImageStream" ).delete( '--ignore-not-present' )
+
+          openshift.selector( "is/$parksmapImageStream" ).delete( '--ignore-not-present' )
+          openshift.selector( "is/$nationalparksImageStream" ).delete( '--ignore-not-present' )
+          openshift.selector( "is/$mlbparksImageStream" ).delete( '--ignore-not-present' )
         }
       }
 
@@ -132,10 +153,7 @@ node('maven') {
     }
   }
   finally {
-    // Clean up local image streams if they exists
-    //parksmapImageStream
-    //nationalparksImageStream
-    //mlbparksImageStream
+    // Place any notification to an external system we need to do in case of success or failure
   }
 }
 
@@ -208,12 +226,10 @@ def uploadArtifactToNexus(def appFolder, def settingsFilename, def repositoryUrl
 }
 
 def doBinaryBuild(def imageStream, def baseImage, def binaryArtifact, def appVersion) {
-  sh """
-    //creates the image imageStream
-    //creates the binary build
-    //oc start-build bc/$buildConfig --from-file="$artifactInfo.path" --follow -n $projectName
-    //oc tag $imageStream:latest $imageStream:$tagName -n $projectName
-  """
+  // Creation of the build config
+  openshift.newBuild("--allow-missing-imagestream-tags=true", "--binary=true", "--docker-image=$baseImage", "--name=$imageStream", "--to='$imagestream:$appVersion'")
+  // Start the binary build
+  openshift.startBuild("bc/$imagestream", "--from-file='$binaryArtifact'", "--follow=true")
 }
 
 def uploadOcpImageToNexus(def openshiftStreamTag, def nexusImageStreamTag, def nexusCredentials) {
@@ -221,6 +237,6 @@ def uploadOcpImageToNexus(def openshiftStreamTag, def nexusImageStreamTag, def n
   def srcCredentials = 'openshift:\\' + openshiftCredentials
   sh """
     set +x
-    skopeo copy --src-tls-verify=false --dest-tls-verify=false --src-creds=$srcCredentials --dest-creds=$nexusCredentials docker://docker-registry.default.svc.cluster.local:5000/demo-cicd/$openshiftStreamTag docker://$nexusImageStreamTag
+    skopeo copy --src-tls-verify=false --dest-tls-verify=false --src-creds=$srcCredentials --dest-creds=$nexusCredentials docker://$openshiftStreamTag docker://$nexusImageStreamTag
   """
 }
