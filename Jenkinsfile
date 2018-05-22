@@ -231,7 +231,7 @@ def doBinaryBuild(def imageStream, def baseImage, def binaryArtifact, def appVer
   // Creation of the build config
   openshift.newBuild("--allow-missing-imagestream-tags=true", "--binary=true", "-i '$baseImage'", "--name='$imageStream'", "--to='$imageStream:$appVersion'")
   // Start the binary build
-  openshift.startBuild("bc/$imageStream", "--from-file='$binaryArtifact'", "--follow")
+  openshift.startBuild("$imageStream", "--from-file='$binaryArtifact'", "--follow")
 }
 
 def uploadOcpImageToNexus(def openshiftStreamTag, def nexusImageStreamTag, def nexusCredentials) {
