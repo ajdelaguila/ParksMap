@@ -234,12 +234,17 @@ def doBinaryBuild(def imageStream, def baseImage, def binaryArtifact, def appVer
 }
 
 def uploadOcpImageToNexus(def openshiftStreamTag, def nexusImageStreamTag, def nexusCredentials) {
-  def openshiftCredentials = sh(script: "oc whoami -t", returnStdout: true).trim()
+try {
+    def openshiftCredentials = sh(script: "oc whoami -t", returnStdout: true).trim()
   def srcCredentials = 'openshift:\\' + openshiftCredentials
   sh """
     echo set +x
     skopeo copy --src-tls-verify=false --dest-tls-verify=false --src-creds=$srcCredentials --dest-creds=$nexusCredentials docker://$openshiftStreamTag docker://$nexusImageStreamTag
   """
+}
+finally{
+  input "aa"
+}
 }
 
 def deleteObjects( def selectorString ) {
