@@ -132,13 +132,23 @@ node('maven') {
           input "Continue?"
 
           // Clean up local image streams and build configurations if they exist
-          openshift.selector( "bc/$parksmapImageStream" ).delete( "--cascade=true", "--ignore-not-found=true" )
-          openshift.selector( "bc/$nationalparksImageStream" ).delete( "--cascade=true", "--ignore-not-found=true" )
-          openshift.selector( "bc/$mlbparksImageStream" ).delete( "--cascade=true", "--ignore-not-found=true" )
+          def bcs = openshift.selector( "bc/$parksmapImageStream" )
+          if (bcs.count()) {
+            bcs.delete( "--cascade=true", "--ignore-not-found=true" )
+            openshift.selector( "is/$parksmapImageStream" ).delete( "--cascade=true", "--ignore-not-found=true" )
+          }
 
-          openshift.selector( "is/$parksmapImageStream" ).delete( "--cascade=true", "--ignore-not-found=true" )
-          openshift.selector( "is/$nationalparksImageStream" ).delete( "--cascade=true", "--ignore-not-found=true" )
-          openshift.selector( "is/$mlbparksImageStream" ).delete( "--cascade=true", "--ignore-not-found=true" )
+          bcs = openshift.selector( "bc/$nationalparksImageStream" )
+          if (bcs.count()) {
+            bcs.delete( "--cascade=true", "--ignore-not-found=true" )
+            openshift.selector( "is/$nationalparksImageStream" ).delete( "--cascade=true", "--ignore-not-found=true" )
+          }
+
+          bcs = openshift.selector( "bc/$mlbparksImageStream" )
+          if (bcs.count()) {
+            bcs.delete( "--cascade=true", "--ignore-not-found=true" )
+            openshift.selector( "is/$mlbparksImageStream" ).delete( "--cascade=true", "--ignore-not-found=true" )
+          }
         }
       }
 
