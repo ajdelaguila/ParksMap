@@ -171,7 +171,7 @@ node('maven') {
 
       stage('Running smoke tests') {
         // Run integration tests in TEST
-      }
+      } 
 
       stage('Deploy to LIVE') {
         // Ask for manual approval before going to LIVE
