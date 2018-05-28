@@ -281,9 +281,9 @@ def deleteObjects( def selectorString ) {
   }
 }
 
-def pathDeploymentAndRollout(def dcName, def imageStreamTag) {
+def pathDeploymentAndRollout(def dcName, def containerName, def imageStreamTag) {
   openshift.raw("set", "triggers", "dc/$dcName", "--remove-all")
-  openshift.raw("set", "image", "dc/$dcName", "parksmap=$imageStreamTag", "--source='docker'")
+  openshift.raw("set", "image", "dc/$dcName", "$containerName=$imageStreamTag", "--source='docker'")
 
   def dc = openshift.selector('dc', parksmapDcName)
   // Set image
@@ -299,12 +299,15 @@ def pathDeploymentAndRollout(def dcName, def imageStreamTag) {
 def doSingleDeployment(def projectName, def deploymentSuffix, def parksmapImageStramTag, def nationalparksImageStreamTag, def mlbparksImageStreamTag) {
   openshift.withProject( projectName ) {
     def parksmapDcName = "parksmap$deploymentSuffix"
+    def parksmapContainerName = "parksmap"
     def nationalparksDcName = "nationalparks$deploymentSuffix"
+    def nationalparksContainerName = "nationalparks"
     def mlbparksDcName = "mlbparks$deploymentSuffix"
+    def mlbparksContainerName = "mlbparks"
 
-    pathDeploymentAndRollout(nationalparksDcName, nationalparksImageStreamTag)
-    pathDeploymentAndRollout(mlbparksDcName, mlbparksImageStreamTag)
-    pathDeploymentAndRollout(parksmapDcName, parksmapImageStramTag)
+    pathDeploymentAndRollout(nationalparksDcName, nationalparksContainerName, nationalparksImageStreamTag)
+    pathDeploymentAndRollout(mlbparksDcName, mlbparksContainerName, mlbparksImageStreamTag)
+    pathDeploymentAndRollout(parksmapDcName, parksmapContainerName, parksmapImageStramTag)
   }
 }
 
