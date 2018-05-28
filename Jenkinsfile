@@ -14,6 +14,10 @@ node('maven') {
     def openshiftTestProjectName = openshiftBaseProjectName + '-test'
     def openshiftLiveProjectName = openshiftBaseProjectName + '-live'
 
+    def parksmapContainerName = "parksmap"
+    def nationalparksContainerName = "nationalparks"
+    def mlbparksContainerName = "mlbparks"
+
     // get annotated version to make sure every build has a different one
     def appVersion = null
     def settingsFilename = null
@@ -277,15 +281,15 @@ def uploadOcpImageToNexus(def openshiftStreamTag, def nexusImageStreamTag, def n
 
 def deleteObjects( def selectorString ) {
   openshift.selector( selectorString ).withEach {
-    it.delete( "--cascade=true", "--ignore-not-found=true" )
+    it.delete( "--cascade=true", "--ignore-not-found=true", "--force=true", "--grace-period=0" )
   }
 }
 
-def pathDeploymentAndRollout(def dcName, def containerName, def imageStreamTag) {
+def patchDeploymentAndRollout(def dcName, def containerName, def imageStreamTag) {
   openshift.raw("set", "triggers", "dc/$dcName", "--remove-all")
   openshift.raw("set", "image", "dc/$dcName", "$containerName=$imageStreamTag", "--source='docker'")
 
-  def dc = openshift.selector('dc', parksmapDcName)
+  def dc = openshift.selector('dc', dcName)
   // Set image
   dc.rollout().latest()
   def latestDeploymentVersion = dc.object().status.latestVersion
@@ -299,19 +303,16 @@ def pathDeploymentAndRollout(def dcName, def containerName, def imageStreamTag) 
 def doSingleDeployment(def projectName, def deploymentSuffix, def parksmapImageStramTag, def nationalparksImageStreamTag, def mlbparksImageStreamTag) {
   openshift.withProject( projectName ) {
     def parksmapDcName = "parksmap$deploymentSuffix"
-    def parksmapContainerName = "parksmap"
     def nationalparksDcName = "nationalparks$deploymentSuffix"
-    def nationalparksContainerName = "nationalparks"
     def mlbparksDcName = "mlbparks$deploymentSuffix"
-    def mlbparksContainerName = "mlbparks"
 
-    pathDeploymentAndRollout(nationalparksDcName, nationalparksContainerName, nationalparksImageStreamTag)
-    pathDeploymentAndRollout(mlbparksDcName, mlbparksContainerName, mlbparksImageStreamTag)
-    pathDeploymentAndRollout(parksmapDcName, parksmapContainerName, parksmapImageStramTag)
+    patchDeploymentAndRollout(nationalparksDcName, nationalparksContainerName, nationalparksImageStreamTag)
+    patchDeploymentAndRollout(mlbparksDcName, mlbparksContainerName, mlbparksImageStreamTag)
+    patchDeploymentAndRollout(parksmapDcName, parksmapContainerName, parksmapImageStramTag)
   }
 }
 
-def partchService(def serviceName, def dcName) {
+def patchService(def serviceName, def dcName) {
 
 }
 
@@ -329,8 +330,8 @@ def doBlueGreenDeployment(def projectName, def deploymentSuffix, def parksmapIma
     def nationalparksDcName = "nationalparks$deploymentSuffix-$targetDeployment"
     def mlbparksDcName = "mlbparks$deploymentSuffix-$targetDeployment"
 
-    pathDeploymentAndRollout(nationalparksDcName, nationalparksImageStreamTag)
-    pathDeploymentAndRollout(mlbparksDcName, mlbparksImageStreamTag)
-    pathDeploymentAndRollout(parksmapDcName, parksmapImageStramTag)
+    pathDeploymentAndRollout(nationalparksDcName, nationalparksContainerName, nationalparksImageStreamTag)
+    pathDeploymentAndRollout(mlbparksDcName, mlbparksContainerName, mlbparksImageStreamTag)
+    pathDeploymentAndRollout(parksmapDcName, parksmapContainerName, parksmapImageStramTag)
   }
 }
