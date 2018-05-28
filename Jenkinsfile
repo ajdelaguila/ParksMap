@@ -22,7 +22,7 @@ node('maven') {
     def hostedMavenUrl = mavenServerUrl + 'repository/maven-releases/'
 
     def openshiftDockgerRegistryUrl = 'docker-registry.default.svc:5000/'
-    def openshiftRegistryUrl =  + openshiftCicdProjectName + '/'
+    def openshiftRegistryUrl = openshiftDockgerRegistryUrl + openshiftCicdProjectName + '/'
     def nexusUsername = 'admin'
     def nexusPassword = 'admin123'
     def sonarUrl = 'http://sonarqube.' + openshiftCicdProjectName + '.svc:9000'
@@ -304,10 +304,10 @@ def deleteObjects( def selectorString ) {
 }
 
 def pullImageFromNexusToOcp(def openshiftStreamTag, def nexusImageStreamTag, def nexusCredentials) {
-  def srcCredentials = 'jenkins:' + sh(script: "oc whoami -t", returnStdout: true).trim()
+  def destCredentials = 'jenkins:' + sh(script: "oc whoami -t", returnStdout: true).trim()
   sh """
     set +x
-    skopeo copy --src-tls-verify=false --dest-tls-verify=false --src-creds='$nexusCredentials' --dest-creds=$srcCredentials docker://$nexusImageStreamTag docker://$openshiftStreamTag
+    skopeo copy --src-tls-verify=false --dest-tls-verify=false --src-creds='$nexusCredentials' --dest-creds=$destCredentials docker://$nexusImageStreamTag docker://$openshiftStreamTag
   """
 }
 
