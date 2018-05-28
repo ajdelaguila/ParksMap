@@ -141,13 +141,15 @@ node('maven') {
           }
         }
         finally {
-          // Clean up local image streams and build configurations if they exist
-          deleteObjects( "bc/$parksmapImageStream" )
-          deleteObjects( "is/$parksmapImageStream" )
-          deleteObjects( "bc/$nationalparksImageStream" )
-          deleteObjects( "is/$nationalparksImageStream" )
-          deleteObjects( "bc/$mlbparksImageStream" )
-          deleteObjects( "is/$mlbparksImageStream" )
+          stage('Cleaning up local resources') {
+            // Clean up local image streams and build configurations if they exist
+            deleteObjects( "bc/$parksmapImageStream" )
+            deleteObjects( "is/$parksmapImageStream" )
+            deleteObjects( "bc/$nationalparksImageStream" )
+            deleteObjects( "is/$nationalparksImageStream" )
+            deleteObjects( "bc/$mlbparksImageStream" )
+            deleteObjects( "is/$mlbparksImageStream" )
+          }
         }
       }
 
@@ -292,7 +294,7 @@ def pathDeploymentAndRollout(def dcName, def imageStreamTag) {
       def rcMap = it.object()
       return (rcMap.status.replicas.equals(rcMap.status.readyReplicas))
   }
-} 
+}
 
 def doSingleDeployment(def projectName, def deploymentSuffix, def parksmapImageStramTag, def nationalparksImageStreamTag, def mlbparksImageStreamTag) {
   openshift.withProject( projectName ) {
