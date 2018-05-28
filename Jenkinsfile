@@ -294,7 +294,7 @@ def pathDeploymentAndRollout(def dcName, def imageStreamTag) {
   }
 }
 
-doSingleDeployment(def projectName, def deploymentSuffix, def parksmapImageStramTag, def nationalparksImageStreamTag, def mlbparksImageStreamTag) {
+def doSingleDeployment(def projectName, def deploymentSuffix, def parksmapImageStramTag, def nationalparksImageStreamTag, def mlbparksImageStreamTag) {
   openshift.withProject( projectName ) {
     def parksmapDcName = "parksmap$deploymentSuffix"
     def nationalparksDcName = "nationalparks$deploymentSuffix"
@@ -311,10 +311,10 @@ def partchService(def serviceName, def dcName) {
 }
 
 def patchRoute(def routeName, def serviceName) {
-  
+
 }
 
-doBlueGreenDeployment(def projectName, def deploymentSuffix, def parksmapImageStramTag, def nationalparksImageStreamTag, def mlbparksImageStreamTag) {
+def doBlueGreenDeployment(def projectName, def deploymentSuffix, def parksmapImageStramTag, def nationalparksImageStreamTag, def mlbparksImageStreamTag) {
   openshift.withProject( projectName ) {
     def targetDeployment = 'blue'
 
