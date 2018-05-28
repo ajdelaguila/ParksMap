@@ -171,7 +171,7 @@ node('maven') {
 
       stage('Running smoke tests') {
         // Run integration tests in TEST
-      } 
+      }
 
       stage('Deploy to LIVE') {
         // Ask for manual approval before going to LIVE
@@ -292,7 +292,7 @@ def pathDeploymentAndRollout(def dcName, def imageStreamTag) {
       def rcMap = it.object()
       return (rcMap.status.replicas.equals(rcMap.status.readyReplicas))
   }
-}
+} 
 
 def doSingleDeployment(def projectName, def deploymentSuffix, def parksmapImageStramTag, def nationalparksImageStreamTag, def mlbparksImageStreamTag) {
   openshift.withProject( projectName ) {
