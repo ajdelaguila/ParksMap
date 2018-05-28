@@ -153,7 +153,7 @@ node('maven') {
 
       stage('Deploy to DEV') {
         // Ask for manual approval before going to DEV
-        input "Promote v$appVersion to $openshiftDevProjectName (DEV)?", ok: "Promote"
+        input message: "Promote v$appVersion to $openshiftDevProjectName (DEV)?", ok: "Promote"
         // Single deployment into DEV
         doSingleDeployment(openshiftDevProjectName, deploymentSuffix, parksmapDockerRegistryUrl, nationalparksDockerRegistryUrl, mlbparksDockerRegistryUrl)
       }
@@ -164,7 +164,7 @@ node('maven') {
 
       stage('Deploy to TEST') {
         // Ask for manual approval before going to TEST
-        input "Promote v$appVersion to $openshiftTestProjectName (TEST)?", ok: "Promote"
+        input message: "Promote v$appVersion to $openshiftTestProjectName (TEST)?", ok: "Promote"
         // Single deployment into TEST
         doSingleDeployment(openshiftTestProjectName, deploymentSuffix, parksmapDockerRegistryUrl, nationalparksDockerRegistryUrl, mlbparksDockerRegistryUrl)
       }
@@ -175,7 +175,7 @@ node('maven') {
 
       stage('Deploy to LIVE') {
         // Ask for manual approval before going to LIVE
-        input "Promote v$appVersion to $openshiftLiveProjectName (LIVE)?", ok: "Promote"
+        input message: "Promote v$appVersion to $openshiftLiveProjectName (LIVE)?", ok: "Promote"
         // Blue/Green deployment into LIVE
         doBlueGreenDeployment(openshiftLiveProjectName, deploymentSuffix, parksmapDockerRegistryUrl, nationalparksDockerRegistryUrl, mlbparksDockerRegistryUrl)
       }
