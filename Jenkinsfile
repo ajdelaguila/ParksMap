@@ -14,10 +14,6 @@ node('maven') {
     def openshiftTestProjectName = openshiftBaseProjectName + '-test'
     def openshiftLiveProjectName = openshiftBaseProjectName + '-live'
 
-    def parksmapContainerName = "parksmap"
-    def nationalparksContainerName = "nationalparks"
-    def mlbparksContainerName = "mlbparks"
-
     // get annotated version to make sure every build has a different one
     def appVersion = null
     def settingsFilename = null
@@ -306,6 +302,10 @@ def doSingleDeployment(def projectName, def deploymentSuffix, def parksmapImageS
     def nationalparksDcName = "nationalparks$deploymentSuffix"
     def mlbparksDcName = "mlbparks$deploymentSuffix"
 
+    def parksmapContainerName = "parksmap"
+    def nationalparksContainerName = "nationalparks"
+    def mlbparksContainerName = "mlbparks"
+
     patchDeploymentAndRollout(nationalparksDcName, nationalparksContainerName, nationalparksImageStreamTag)
     patchDeploymentAndRollout(mlbparksDcName, mlbparksContainerName, mlbparksImageStreamTag)
     patchDeploymentAndRollout(parksmapDcName, parksmapContainerName, parksmapImageStramTag)
@@ -326,12 +326,6 @@ def doBlueGreenDeployment(def projectName, def deploymentSuffix, def parksmapIma
 
     // Decide if the target deployment has to be green
 
-    def parksmapDcName = "parksmap$deploymentSuffix-$targetDeployment"
-    def nationalparksDcName = "nationalparks$deploymentSuffix-$targetDeployment"
-    def mlbparksDcName = "mlbparks$deploymentSuffix-$targetDeployment"
-
-    pathDeploymentAndRollout(nationalparksDcName, nationalparksContainerName, nationalparksImageStreamTag)
-    pathDeploymentAndRollout(mlbparksDcName, mlbparksContainerName, mlbparksImageStreamTag)
-    pathDeploymentAndRollout(parksmapDcName, parksmapContainerName, parksmapImageStramTag)
+    doSingleDeployment(projectName, "$deploymentSuffix-$targetDeployment", parksmapImageStramTag, nationalparksImageStreamTag, mlbparksImageStreamTag)
   }
 }
