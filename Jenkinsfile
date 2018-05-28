@@ -21,7 +21,8 @@ node('maven') {
     def mavenMirrorUrl = mavenServerUrl + 'repository/maven-all-public/'
     def hostedMavenUrl = mavenServerUrl + 'repository/maven-releases/'
 
-    def openshiftRegistryUrl = 'docker-registry.default.svc:5000/' + openshiftCicdProjectName + '/'
+    def openshiftDockgerRegistryUrl = 'docker-registry.default.svc:5000/'
+    def openshiftRegistryUrl =  + openshiftCicdProjectName + '/'
     def nexusUsername = 'admin'
     def nexusPassword = 'admin123'
     def sonarUrl = 'http://sonarqube.' + openshiftCicdProjectName + '.svc:9000'
@@ -156,8 +157,15 @@ node('maven') {
       stage('Deploy to DEV') {
         // Ask for manual approval before going to DEV
         input message: "Promote v$appVersion to $openshiftDevProjectName (DEV)?", ok: "Promote"
+        // Pull the image into DEV
+        node('skopeo') {
+          pullImageFromNexusToOcp(openshiftDockgerRegistryUrl + openshiftDevProjectName + '/' + parksmapImageStream + ':' + appVersion, parksmapDockerRegistryUrl, "$nexusUsername:$nexusPassword")
+          pullImageFromNexusToOcp(openshiftDockgerRegistryUrl + openshiftDevProjectName + '/' + nationalparksImageStream + ':' + appVersion, nationalparksDockerRegistryUrl, "$nexusUsername:$nexusPassword")
+          pullImageFromNexusToOcp(openshiftDockgerRegistryUrl + openshiftDevProjectName + '/' + mlbparksImageStream + ':' + appVersion, mlbparksDockerRegistryUrl, "$nexusUsername:$nexusPassword")
+        }
+
         // Single deployment into DEV
-        doSingleDeployment(openshiftDevProjectName, deploymentSuffix, parksmapDockerRegistryUrl, nationalparksDockerRegistryUrl, mlbparksDockerRegistryUrl)
+        doSingleDeployment(openshiftDevProjectName, deploymentSuffix, parksmapImageStream + ':' + appVersion, nationalparksImageStream + ':' + appVersion, mlbparksImageStream + ':' + appVersion)
       }
 
       stage('Running integration tests') {
@@ -167,8 +175,15 @@ node('maven') {
       stage('Deploy to TEST') {
         // Ask for manual approval before going to TEST
         input message: "Promote v$appVersion to $openshiftTestProjectName (TEST)?", ok: "Promote"
+        // Pull the image into TEST
+        node('skopeo') {
+          pullImageFromNexusToOcp(openshiftDockgerRegistryUrl + openshiftTestProjectName + '/' + parksmapImageStream + ':' + appVersion, parksmapDockerRegistryUrl, "$nexusUsername:$nexusPassword")
+          pullImageFromNexusToOcp(openshiftDockgerRegistryUrl + openshiftTestProjectName + '/' + nationalparksImageStream + ':' + appVersion, nationalparksDockerRegistryUrl, "$nexusUsername:$nexusPassword")
+          pullImageFromNexusToOcp(openshiftDockgerRegistryUrl + openshiftTestProjectName + '/' + mlbparksImageStream + ':' + appVersion, mlbparksDockerRegistryUrl, "$nexusUsername:$nexusPassword")
+        }
+
         // Single deployment into TEST
-        doSingleDeployment(openshiftTestProjectName, deploymentSuffix, parksmapDockerRegistryUrl, nationalparksDockerRegistryUrl, mlbparksDockerRegistryUrl)
+        doSingleDeployment(openshiftDevProjectName, deploymentSuffix, parksmapImageStream + ':' + appVersion, nationalparksImageStream + ':' + appVersion, mlbparksImageStream + ':' + appVersion)
       }
 
       stage('Running smoke tests') {
@@ -178,8 +193,15 @@ node('maven') {
       stage('Deploy to LIVE') {
         // Ask for manual approval before going to LIVE
         input message: "Promote v$appVersion to $openshiftLiveProjectName (LIVE)?", ok: "Promote"
+        // Pull the image into LIVE
+        node('skopeo') {
+          pullImageFromNexusToOcp(openshiftDockgerRegistryUrl + openshiftLiveProjectName + '/' + parksmapImageStream + ':' + appVersion, parksmapDockerRegistryUrl, "$nexusUsername:$nexusPassword")
+          pullImageFromNexusToOcp(openshiftDockgerRegistryUrl + openshiftLiveProjectName + '/' + nationalparksImageStream + ':' + appVersion, nationalparksDockerRegistryUrl, "$nexusUsername:$nexusPassword")
+          pullImageFromNexusToOcp(openshiftDockgerRegistryUrl + openshiftLiveProjectName + '/' + mlbparksImageStream + ':' + appVersion, mlbparksDockerRegistryUrl, "$nexusUsername:$nexusPassword")
+        }
+
         // Blue/Green deployment into LIVE
-        doBlueGreenDeployment(openshiftLiveProjectName, deploymentSuffix, parksmapDockerRegistryUrl, nationalparksDockerRegistryUrl, mlbparksDockerRegistryUrl)
+        doBlueGreenDeployment(openshiftDevProjectName, deploymentSuffix, parksmapImageStream + ':' + appVersion, nationalparksImageStream + ':' + appVersion, mlbparksImageStream + ':' + appVersion)
       }
 
       stage('Running smoke tests') {
@@ -281,9 +303,17 @@ def deleteObjects( def selectorString ) {
   }
 }
 
+def pullImageFromNexusToOcp(def openshiftStreamTag, def nexusImageStreamTag, def nexusCredentials) {
+  def srcCredentials = 'jenkins:' + sh(script: "oc whoami -t", returnStdout: true).trim()
+  sh """
+    set +x
+    skopeo copy --src-tls-verify=false --dest-tls-verify=false --src-creds='$nexusCredentials' --dest-creds=$srcCredentials docker://$nexusImageStreamTag docker://$openshiftStreamTag
+  """
+}
+
 def patchDeploymentAndRollout(def dcName, def containerName, def imageStreamTag) {
   openshift.raw("set", "triggers", "dc/$dcName", "--remove-all")
-  openshift.raw("set", "image", "dc/$dcName", "$containerName=$imageStreamTag", "--source='docker'")
+  openshift.raw("set", "image", "dc/$dcName", "$containerName=$imageStreamTag", "--source='imageStreamTag'")
 
   def dc = openshift.selector('dc', dcName)
   // Set image
