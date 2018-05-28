@@ -7,9 +7,12 @@ node('maven') {
     def mlbparksFolder = "$checkoutFolder/mlbparks"
 
     def openshiftCicdProjectName = 'demo-cicd'
-    def openshiftDevProjectName = 'parksmap-dev'
-    def openshiftTestProjectName = 'parksmap-test'
-    def openshiftLiveProjectName = 'parksmap-live'
+
+    def deploymentSuffix = ''
+    def openshiftBaseProjectName = 'parksmap' + deploymentSuffix
+    def openshiftDevProjectName = openshiftBaseProjectName + '-dev'
+    def openshiftTestProjectName = openshiftBaseProjectName + '-test'
+    def openshiftLiveProjectName = openshiftBaseProjectName + '-live'
 
     // get annotated version to make sure every build has a different one
     def appVersion = null
@@ -17,13 +20,18 @@ node('maven') {
     def mavenServerUrl = 'http://nexus.' + openshiftCicdProjectName + '.svc:8081/'
     def mavenMirrorUrl = mavenServerUrl + 'repository/maven-all-public/'
     def hostedMavenUrl = mavenServerUrl + 'repository/maven-releases/'
-    def dockerServerUrl = 'nexus.' + openshiftCicdProjectName + '.svc:8082/'
-    def dockerRegistryUrl = dockerServerUrl + "$openshiftLiveProjectName/"
+
     def openshiftRegistryUrl = 'docker-registry.default.svc:5000/' + openshiftCicdProjectName + '/'
     def nexusUsername = 'admin'
     def nexusPassword = 'admin123'
     def sonarUrl = 'http://sonarqube.' + openshiftCicdProjectName + '.svc:9000'
     def sonarToken = '29c8f656bcf05f4f134273e697e856ed8536f83f'
+
+    def dockerServerUrl = 'nexus.' + openshiftCicdProjectName + '.svc:8082/'
+    def dockerRegistryUrl = dockerServerUrl + "$openshiftBaseProjectName-env/"
+    def parksmapDockerRegistryUrl = null
+    def nationalparksDockerRegistryUrl = null
+    def mlbparksDockerRegistryUrl = null
 
     def parksmapBinaryArtifact = null
     def nationalparksBinaryArtifact = null
@@ -53,8 +61,11 @@ node('maven') {
       stage('Get new version') {
         appVersion = getAppVersion(parksmapFolder)
       }
-      stage("Parks Map - set version $appVersion") {
+      stage("Parks Map - set v$appVersion") {
         setAppVersion(parksmapFolder, appVersion, settingsFilename)
+        parksmapDockerRegistryUrl = dockerRegistryUrl + 'parksmap:' + appVersion
+        nationalparksDockerRegistryUrl = dockerRegistryUrl + 'nationalparks:' + appVersion
+        mlbparksDockerRegistryUrl = dockerRegistryUrl + 'mlbparks:' + appVersion
       }
       stage('Parks Map - Building') {
         build(parksmapFolder, settingsFilename)
@@ -63,7 +74,7 @@ node('maven') {
       stage('Parks Map - Running unit tests') {
         runUnitTests(parksmapFolder, settingsFilename, sonarUrl, sonarToken)
       }
-      stage("National Parks - set version $appVersion") {
+      stage("National Parks - set v$appVersion") {
         setAppVersion(nationalparksFolder, appVersion, settingsFilename)
       }
       stage('National Parks - Building') {
@@ -73,7 +84,7 @@ node('maven') {
       stage('National Parks - Running unit tests') {
         runUnitTests(nationalparksFolder, settingsFilename, sonarUrl, sonarToken)
       }
-      stage("MLB Parks - set version $appVersion") {
+      stage("MLB Parks - set v$appVersion") {
         setAppVersion(mlbparksFolder, appVersion, settingsFilename)
       }
       stage('MLB Parks - Building') {
@@ -119,13 +130,13 @@ node('maven') {
           // Execute all three next commands in another node with support for skopeo
           node('skopeo') {
             stage('Parks Map - push docker image to Nexus') {
-              uploadOcpImageToNexus(openshiftRegistryUrl + parksmapImageStream + ':' + appVersion, dockerRegistryUrl + 'parksmap:' + appVersion, "$nexusUsername:$nexusPassword")
+              uploadOcpImageToNexus(openshiftRegistryUrl + parksmapImageStream + ':' + appVersion, parksmapDockerRegistryUrl, "$nexusUsername:$nexusPassword")
             }
             stage('National Parls - push docker image to Nexus') {
-              uploadOcpImageToNexus(openshiftRegistryUrl + nationalparksImageStream + ':' + appVersion, dockerRegistryUrl + 'nationalparks:' + appVersion, "$nexusUsername:$nexusPassword")
+              uploadOcpImageToNexus(openshiftRegistryUrl + nationalparksImageStream + ':' + appVersion, nationalparksDockerRegistryUrl, "$nexusUsername:$nexusPassword")
             }
             stage('MLB Parks - push docker image to Nexus') {
-              uploadOcpImageToNexus(openshiftRegistryUrl + mlbparksImageStream + ':' + appVersion, dockerRegistryUrl + 'mlbparks:' + appVersion, "$nexusUsername:$nexusPassword")
+              uploadOcpImageToNexus(openshiftRegistryUrl + mlbparksImageStream + ':' + appVersion, mlbparksDockerRegistryUrl, "$nexusUsername:$nexusPassword")
             }
           }
         }
@@ -140,16 +151,38 @@ node('maven') {
         }
       }
 
-      // Single deployment into DEV
+      stage('Deploy to DEV') {
+        // Ask for manual approval before going to DEV
+        input "Promote v$appVersion to $openshiftDevProjectName (DEV)?", ok: "Promote"
+        // Single deployment into DEV
+        doSingleDeployment(openshiftDevProjectName, deploymentSuffix, parksmapDockerRegistryUrl, nationalparksDockerRegistryUrl, mlbparksDockerRegistryUrl)
+      }
 
-      // Ask for manual approval before going to TEST
+      stage('Running integration tests') {
+        // Run integration tests in DEV
+      }
 
-      // Single deployment into TEST
+      stage('Deploy to TEST') {
+        // Ask for manual approval before going to TEST
+        input "Promote v$appVersion to $openshiftTestProjectName (TEST)?", ok: "Promote"
+        // Single deployment into TEST
+        doSingleDeployment(openshiftTestProjectName, deploymentSuffix, parksmapDockerRegistryUrl, nationalparksDockerRegistryUrl, mlbparksDockerRegistryUrl)
+      }
 
-      // Ask for manual approval before going to LIVE
+      stage('Running smoke tests') {
+        // Run integration tests in TEST
+      }
 
-      // Blue/Green deployment into LIVE
+      stage('Deploy to LIVE') {
+        // Ask for manual approval before going to LIVE
+        input "Promote v$appVersion to $openshiftLiveProjectName (LIVE)?", ok: "Promote"
+        // Blue/Green deployment into LIVE
+        doBlueGreenDeployment(openshiftLiveProjectName, deploymentSuffix, parksmapDockerRegistryUrl, nationalparksDockerRegistryUrl, mlbparksDockerRegistryUrl)
+      }
 
+      stage('Running smoke tests') {
+        // Run integration tests in LIVE
+      }
     }
   }
   finally {
@@ -235,14 +268,64 @@ def doBinaryBuild(def imageStream, def baseImage, def binaryArtifact, def appVer
 def uploadOcpImageToNexus(def openshiftStreamTag, def nexusImageStreamTag, def nexusCredentials) {
   def srcCredentials = 'jenkins:' + sh(script: "oc whoami -t", returnStdout: true).trim()
   sh """
-    echo set +x
+    set +x
     skopeo copy --src-tls-verify=false --dest-tls-verify=false --src-creds=$srcCredentials --dest-creds='$nexusCredentials' docker://$openshiftStreamTag docker://$nexusImageStreamTag
   """
 }
 
 def deleteObjects( def selectorString ) {
-  def objs = openshift.selector( selectorString )
-  objs.withEach {
+  openshift.selector( selectorString ).withEach {
     it.delete( "--cascade=true", "--ignore-not-found=true" )
+  }
+}
+
+def pathDeploymentAndRollout(def dcName, def imageStreamTag) {
+  openshift.raw("set", "triggers", "dc/$dcName", "--remove-all")
+  openshift.raw("set", "image", "dc/$dcName", "parksmap=$imageStreamTag", "--source='docker'")
+
+  def dc = openshift.selector('dc', parksmapDcName)
+  // Set image
+  dc.rollout().latest()
+  def latestDeploymentVersion = dc.object().status.latestVersion
+  def rc = openshift.selector('rc', "$dcName-${latestDeploymentVersion}")
+  rc.untilEach(1){
+      def rcMap = it.object()
+      return (rcMap.status.replicas.equals(rcMap.status.readyReplicas))
+  }
+}
+
+doSingleDeployment(def projectName, def deploymentSuffix, def parksmapImageStramTag, def nationalparksImageStreamTag, def mlbparksImageStreamTag) {
+  openshift.withProject( projectName ) {
+    def parksmapDcName = "parksmap$deploymentSuffix"
+    def nationalparksDcName = "nationalparks$deploymentSuffix"
+    def mlbparksDcName = "mlbparks$deploymentSuffix"
+
+    pathDeploymentAndRollout(nationalparksDcName, nationalparksImageStreamTag)
+    pathDeploymentAndRollout(mlbparksDcName, mlbparksImageStreamTag)
+    pathDeploymentAndRollout(parksmapDcName, parksmapImageStramTag)
+  }
+}
+
+def partchService(def serviceName, def dcName) {
+
+}
+
+def patchRoute(def routeName, def serviceName) {
+  
+}
+
+doBlueGreenDeployment(def projectName, def deploymentSuffix, def parksmapImageStramTag, def nationalparksImageStreamTag, def mlbparksImageStreamTag) {
+  openshift.withProject( projectName ) {
+    def targetDeployment = 'blue'
+
+    // Decide if the target deployment has to be green
+
+    def parksmapDcName = "parksmap$deploymentSuffix-$targetDeployment"
+    def nationalparksDcName = "nationalparks$deploymentSuffix-$targetDeployment"
+    def mlbparksDcName = "mlbparks$deploymentSuffix-$targetDeployment"
+
+    pathDeploymentAndRollout(nationalparksDcName, nationalparksImageStreamTag)
+    pathDeploymentAndRollout(mlbparksDcName, mlbparksImageStreamTag)
+    pathDeploymentAndRollout(parksmapDcName, parksmapImageStramTag)
   }
 }
