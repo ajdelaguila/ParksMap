@@ -165,7 +165,7 @@ node('maven') {
         }
 
         // Single deployment into DEV
-        doSingleDeployment(openshiftDevProjectName, deploymentSuffix, 'parksmap:' + appVersion, 'nationalparks:' + appVersion, 'mlbparks:' + appVersion)
+        doSingleDeployment(openshiftDevProjectName, deploymentSuffix, openshiftDockgerRegistryUrl + openshiftDevProjectName + '/parksmap:' + appVersion, openshiftDockgerRegistryUrl + openshiftDevProjectName + '/nationalparks:' + appVersion, openshiftDockgerRegistryUrl + openshiftDevProjectName + '/mlbparks:' + appVersion)
       }
 
       stage('Running integration tests') {
@@ -183,7 +183,7 @@ node('maven') {
         }
 
         // Single deployment into TEST
-        doSingleDeployment(openshiftTestProjectName, deploymentSuffix, 'parksmap:' + appVersion, 'nationalparks:' + appVersion, 'mlbparks:' + appVersion)
+        doSingleDeployment(openshiftTestProjectName, deploymentSuffix, openshiftDockgerRegistryUrl + openshiftTestProjectName + '/parksmap:' + appVersion, openshiftDockgerRegistryUrl + openshiftTestProjectName + '/nationalparks:' + appVersion, openshiftDockgerRegistryUrl + openshiftTestProjectName + '/mlbparks:' + appVersion)
       }
 
       stage('Running smoke tests') {
@@ -201,7 +201,7 @@ node('maven') {
         }
 
         // Blue/Green deployment into LIVE
-        doBlueGreenDeployment(openshiftLiveProjectName, deploymentSuffix, 'parksmap:' + appVersion, 'nationalparks:' + appVersion, 'mlbparks:' + appVersion)
+        doBlueGreenDeployment(openshiftLiveProjectName, deploymentSuffix, openshiftDockgerRegistryUrl + openshiftLiveProjectName + '/parksmap:' + appVersion, openshiftDockgerRegistryUrl + openshiftLiveProjectName + '/nationalparks:' + appVersion, openshiftDockgerRegistryUrl + openshiftLiveProjectName + '/mlbparks:' + appVersion)
       }
 
       stage('Running smoke tests') {
