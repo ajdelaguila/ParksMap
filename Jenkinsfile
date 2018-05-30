@@ -313,7 +313,7 @@ def pullImageFromNexusToOcp(def openshiftStreamTag, def nexusImageStreamTag, def
 
 def patchDeploymentAndRollout(def dcName, def containerName, def imageStreamTag) {
   openshift.raw("set", "triggers", "dc/$dcName", "--remove-all")
-  openshift.raw("set", "image", "dc/$dcName", "$containerName=$imageStreamTag", "--source='imageStreamTag'")
+  openshift.raw("set", "image", "dc/$dcName", "$containerName=$imageStreamTag")
 
   def dc = openshift.selector('dc', dcName)
   // Set image
