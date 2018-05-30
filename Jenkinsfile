@@ -165,7 +165,7 @@ node('maven') {
         }
 
         // Single deployment into DEV
-        doSingleDeployment(openshiftDevProjectName, deploymentSuffix, '/parksmap:' + appVersion, '/nationalparks:' + appVersion, '/mlbparks:' + appVersion)
+        doSingleDeployment(openshiftDevProjectName, deploymentSuffix, 'parksmap:' + appVersion, 'nationalparks:' + appVersion, 'mlbparks:' + appVersion)
       }
 
       stage('Running integration tests') {
@@ -183,7 +183,7 @@ node('maven') {
         }
 
         // Single deployment into TEST
-        doSingleDeployment(openshiftTestProjectName, deploymentSuffix, '/parksmap:' + appVersion, '/nationalparks:' + appVersion, '/mlbparks:' + appVersion)
+        doSingleDeployment(openshiftTestProjectName, deploymentSuffix, 'parksmap:' + appVersion, 'nationalparks:' + appVersion, 'mlbparks:' + appVersion)
       }
 
       stage('Running smoke tests') {
@@ -195,13 +195,13 @@ node('maven') {
         input message: "Promote v$appVersion to $openshiftLiveProjectName (LIVE)?", ok: "Promote"
         // Pull the image into LIVE
         node('skopeo') {
-          pullImageFromNexusToOcp(openshiftDockgerRegistryUrl + openshiftLiveProjectName + '/' + parksmapImageStream + ':' + appVersion, parksmapDockerRegistryUrl, "$nexusUsername:$nexusPassword")
-          pullImageFromNexusToOcp(openshiftDockgerRegistryUrl + openshiftLiveProjectName + '/' + nationalparksImageStream + ':' + appVersion, nationalparksDockerRegistryUrl, "$nexusUsername:$nexusPassword")
-          pullImageFromNexusToOcp(openshiftDockgerRegistryUrl + openshiftLiveProjectName + '/' + mlbparksImageStream + ':' + appVersion, mlbparksDockerRegistryUrl, "$nexusUsername:$nexusPassword")
+          pullImageFromNexusToOcp(openshiftDockgerRegistryUrl + openshiftLiveProjectName + '/parksmap:' + appVersion, parksmapDockerRegistryUrl, "$nexusUsername:$nexusPassword")
+          pullImageFromNexusToOcp(openshiftDockgerRegistryUrl + openshiftLiveProjectName + '/nationalparks:' + appVersion, nationalparksDockerRegistryUrl, "$nexusUsername:$nexusPassword")
+          pullImageFromNexusToOcp(openshiftDockgerRegistryUrl + openshiftLiveProjectName + '/mlbparks:' + appVersion, mlbparksDockerRegistryUrl, "$nexusUsername:$nexusPassword")
         }
 
         // Blue/Green deployment into LIVE
-        doBlueGreenDeployment(openshiftLiveProjectName, deploymentSuffix, parksmapImageStream + ':' + appVersion, nationalparksImageStream + ':' + appVersion, mlbparksImageStream + ':' + appVersion)
+        doBlueGreenDeployment(openshiftLiveProjectName, deploymentSuffix, 'parksmap:' + appVersion, 'nationalparks:' + appVersion, 'mlbparks:' + appVersion)
       }
 
       stage('Running smoke tests') {
