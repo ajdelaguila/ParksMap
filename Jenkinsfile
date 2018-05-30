@@ -159,13 +159,13 @@ node('maven') {
         input message: "Promote v$appVersion to $openshiftDevProjectName (DEV)?", ok: "Promote"
         // Pull the image into DEV
         node('skopeo') {
-          pullImageFromNexusToOcp(openshiftDockgerRegistryUrl + openshiftDevProjectName + '/' + parksmapImageStream + ':' + appVersion, parksmapDockerRegistryUrl, "$nexusUsername:$nexusPassword")
-          pullImageFromNexusToOcp(openshiftDockgerRegistryUrl + openshiftDevProjectName + '/' + nationalparksImageStream + ':' + appVersion, nationalparksDockerRegistryUrl, "$nexusUsername:$nexusPassword")
-          pullImageFromNexusToOcp(openshiftDockgerRegistryUrl + openshiftDevProjectName + '/' + mlbparksImageStream + ':' + appVersion, mlbparksDockerRegistryUrl, "$nexusUsername:$nexusPassword")
+          pullImageFromNexusToOcp(openshiftDockgerRegistryUrl + openshiftDevProjectName + '/parksmap:' + appVersion, parksmapDockerRegistryUrl, "$nexusUsername:$nexusPassword")
+          pullImageFromNexusToOcp(openshiftDockgerRegistryUrl + openshiftDevProjectName + '/nationalparks:' + appVersion, nationalparksDockerRegistryUrl, "$nexusUsername:$nexusPassword")
+          pullImageFromNexusToOcp(openshiftDockgerRegistryUrl + openshiftDevProjectName + '/mlbparks:' + appVersion, mlbparksDockerRegistryUrl, "$nexusUsername:$nexusPassword")
         }
 
         // Single deployment into DEV
-        doSingleDeployment(openshiftDevProjectName, deploymentSuffix, parksmapImageStream + ':' + appVersion, nationalparksImageStream + ':' + appVersion, mlbparksImageStream + ':' + appVersion)
+        doSingleDeployment(openshiftDevProjectName, deploymentSuffix, '/parksmap:' + appVersion, '/nationalparks:' + appVersion, '/mlbparks:' + appVersion)
       }
 
       stage('Running integration tests') {
@@ -177,13 +177,13 @@ node('maven') {
         input message: "Promote v$appVersion to $openshiftTestProjectName (TEST)?", ok: "Promote"
         // Pull the image into TEST
         node('skopeo') {
-          pullImageFromNexusToOcp(openshiftDockgerRegistryUrl + openshiftTestProjectName + '/' + parksmapImageStream + ':' + appVersion, parksmapDockerRegistryUrl, "$nexusUsername:$nexusPassword")
-          pullImageFromNexusToOcp(openshiftDockgerRegistryUrl + openshiftTestProjectName + '/' + nationalparksImageStream + ':' + appVersion, nationalparksDockerRegistryUrl, "$nexusUsername:$nexusPassword")
-          pullImageFromNexusToOcp(openshiftDockgerRegistryUrl + openshiftTestProjectName + '/' + mlbparksImageStream + ':' + appVersion, mlbparksDockerRegistryUrl, "$nexusUsername:$nexusPassword")
+          pullImageFromNexusToOcp(openshiftDockgerRegistryUrl + openshiftTestProjectName + '/parksmap:' + appVersion, parksmapDockerRegistryUrl, "$nexusUsername:$nexusPassword")
+          pullImageFromNexusToOcp(openshiftDockgerRegistryUrl + openshiftTestProjectName + '/nationalparks:' + appVersion, nationalparksDockerRegistryUrl, "$nexusUsername:$nexusPassword")
+          pullImageFromNexusToOcp(openshiftDockgerRegistryUrl + openshiftTestProjectName + '/mlbparks:' + appVersion, mlbparksDockerRegistryUrl, "$nexusUsername:$nexusPassword")
         }
 
         // Single deployment into TEST
-        doSingleDeployment(openshiftDevProjectName, deploymentSuffix, parksmapImageStream + ':' + appVersion, nationalparksImageStream + ':' + appVersion, mlbparksImageStream + ':' + appVersion)
+        doSingleDeployment(openshiftTestProjectName, deploymentSuffix, '/parksmap:' + appVersion, '/nationalparks:' + appVersion, '/mlbparks:' + appVersion)
       }
 
       stage('Running smoke tests') {
@@ -201,7 +201,7 @@ node('maven') {
         }
 
         // Blue/Green deployment into LIVE
-        doBlueGreenDeployment(openshiftDevProjectName, deploymentSuffix, parksmapImageStream + ':' + appVersion, nationalparksImageStream + ':' + appVersion, mlbparksImageStream + ':' + appVersion)
+        doBlueGreenDeployment(openshiftLiveProjectName, deploymentSuffix, parksmapImageStream + ':' + appVersion, nationalparksImageStream + ':' + appVersion, mlbparksImageStream + ':' + appVersion)
       }
 
       stage('Running smoke tests') {
