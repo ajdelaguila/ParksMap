@@ -374,13 +374,13 @@ def doBlueGreenDeployment(def projectName, def deploymentSuffix, def parksmapIma
 println(ex.toString());
     }
     try {
-      println "3 - $svc.spect.selector.deploymentConfig"
+      println "3 - $svc.spec.selector.deploymentConfig"
     }
     catch(Exception ex) {
 println(ex.toString());
     }
     try {
-      println "4 - " + svc.spect.selector[0].deploymentConfig
+      println "4 - " + svc.spec.selector[0].deploymentConfig
     }
     catch(Exception ex) {
 println(ex.toString());
