@@ -353,7 +353,7 @@ def patchService(def serviceName, def targetDeployment) {
 
 def patchRoute(def routeName, def serviceName) {
   def route = openshift.selector('route', routeName).object()
-  reoute.spec.to.name = serviceName
+  route.spec.to.name = serviceName
   openshift.apply(route)
 }
 
