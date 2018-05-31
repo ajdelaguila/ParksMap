@@ -41,7 +41,7 @@ node('maven') {
     def imageStreamsPreffix = "$env.JOB_NAME-$env.BUILD_NUMBER"
 
     appVersion = '1.0.0-54-g8d0890a'
-    doBlueGreenDeployment(openshiftLiveProjectName, deploymentSuffix, openshiftDockgerRegistryUrl + openshiftLiveProjectName + '/parksmap:' + appVersion, openshiftDockgerRegistryUrl + openshiftLiveProjectName + '/nationalparks:' + appVersion, openshiftDockgerRegistryUrl + openshiftLiveProjectName + '/mlbparks:' + appVersion)
+    doBlueGreenDeployment(openshiftLiveProjectName, 'blue', openshiftDockgerRegistryUrl + openshiftLiveProjectName + '/parksmap:' + appVersion, openshiftDockgerRegistryUrl + openshiftLiveProjectName + '/nationalparks:' + appVersion, openshiftDockgerRegistryUrl + openshiftLiveProjectName + '/mlbparks:' + appVersion)
 input "ENOUGH!!!"
     // Start session with the service account jenkins which is the one configured by default for this builder
     openshift.withCluster() {
@@ -364,15 +364,27 @@ def doBlueGreenDeployment(def projectName, def deploymentSuffix, def parksmapIma
     try {
       println "1 - $svc.deploymentConfig"
     }
-    catch(Exception ex) { }
+    catch(Exception ex) {
+    println(ex.toString());
+  }
     try {
       println "2 - $svc.selector.deploymentConfig"
     }
-    catch(Exception ex) { }
+    catch(Exception ex) {
+println(ex.toString());
+    }
     try {
       println "3 - $svc.spect.selector.deploymentConfig"
     }
-    catch(Exception ex) { }
+    catch(Exception ex) {
+println(ex.toString());
+    }
+    try {
+      println "4 - " + svc.spect.selector[0].deploymentConfig
+    }
+    catch(Exception ex) {
+println(ex.toString());
+    }
 
     def targetDeployment = svc.deploymentConfig.endsWith('green') ? 'blue' : 'green'
 
