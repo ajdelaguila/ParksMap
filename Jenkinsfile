@@ -347,7 +347,7 @@ def doSingleDeployment(def projectName, def deploymentSuffix, def parksmapImageS
 
 def patchService(def serviceName, def targetDeployment) {
   def svc = openshift.selector('svc', serviceName).object()
-  svc.spec.selector.deploymentConfig = "$baseDcName-$targetDeployment"
+  svc.spec.selector.deploymentConfig = targetDeployment
   openshift.apply(svc)
 }
 
