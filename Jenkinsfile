@@ -42,7 +42,7 @@ node('maven') {
 
     appVersion = '1.0.0-54-g8d0890a'
     doBlueGreenDeployment(openshiftLiveProjectName, deploymentSuffix, openshiftDockgerRegistryUrl + openshiftLiveProjectName + '/parksmap:' + appVersion, openshiftDockgerRegistryUrl + openshiftLiveProjectName + '/nationalparks:' + appVersion, openshiftDockgerRegistryUrl + openshiftLiveProjectName + '/mlbparks:' + appVersion)
-input ENOUGH!!!
+input "ENOUGH!!!"
     // Start session with the service account jenkins which is the one configured by default for this builder
     openshift.withCluster() {
       stage('Checkout code') {
