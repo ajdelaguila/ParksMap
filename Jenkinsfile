@@ -40,6 +40,9 @@ node('maven') {
 
     def imageStreamsPreffix = "$env.JOB_NAME-$env.BUILD_NUMBER"
 
+    appVersion = '1.0.0-54-g8d0890a'
+    doBlueGreenDeployment(openshiftLiveProjectName, deploymentSuffix, openshiftDockgerRegistryUrl + openshiftLiveProjectName + '/parksmap:' + appVersion, openshiftDockgerRegistryUrl + openshiftLiveProjectName + '/nationalparks:' + appVersion, openshiftDockgerRegistryUrl + openshiftLiveProjectName + '/mlbparks:' + appVersion)
+input ENOUGH!!!
     // Start session with the service account jenkins which is the one configured by default for this builder
     openshift.withCluster() {
       stage('Checkout code') {
@@ -358,7 +361,19 @@ def doBlueGreenDeployment(def projectName, def deploymentSuffix, def parksmapIma
   openshift.withProject( projectName ) {
     //Use any of them because they will all changed at the same time and, if not, they will be sync in the next deployment.
     def svc = openshift.selector('svc', 'nationalparks' + deploymentSuffix).object()
-    input svc.deploymentConfig + ' - ' + svc.selector.deploymentConfig + ' - '+ svc.spect.selector.deploymentConfig
+    try {
+      println "1 - $svc.deploymentConfig"
+    }
+    catch(Exception ex) { }
+    try {
+      println "2 - $svc.selector.deploymentConfig"
+    }
+    catch(Exception ex) { }
+    try {
+      println "3 - $svc.spect.selector.deploymentConfig"
+    }
+    catch(Exception ex) { }
+
     def targetDeployment = svc.deploymentConfig.endsWith('green') ? 'blue' : 'green'
 
     doSingleDeployment(projectName, "$deploymentSuffix-$targetDeployment", parksmapImageStramTag, nationalparksImageStreamTag, mlbparksImageStreamTag)
