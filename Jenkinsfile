@@ -344,7 +344,7 @@ def doSingleDeployment(def projectName, def deploymentSuffix, def parksmapImageS
 
 def patchService(def serviceName, def targetDeployment) {
   def svc = openshift.selector('svc', serviceName)
-  svc.selector.deploymentConfig = "$baseDcName-$targetDeployment"
+  svc.deploymentConfig = "$baseDcName-$targetDeployment"
   openshift.apply(svc)
 }
 
@@ -358,7 +358,8 @@ def doBlueGreenDeployment(def projectName, def deploymentSuffix, def parksmapIma
   openshift.withProject( projectName ) {
     //Use any of them because they will all changed at the same time and, if not, they will be sync in the next deployment.
     def svc = openshift.selector('svc', 'nationalparks' + deploymentSuffix)
-    def targetDeployment = svc.selector.deploymentConfig.endsWith('green') ? 'blue' : 'green'
+    input svc.deploymentConfig
+    def targetDeployment = svc.deploymentConfig.endsWith('green') ? 'blue' : 'green'
 
     doSingleDeployment(projectName, "$deploymentSuffix-$targetDeployment", parksmapImageStramTag, nationalparksImageStreamTag, mlbparksImageStreamTag)
     patchService('nationalparks' + deploymentSuffix, 'nationalparks' + deploymentSuffix + '-' + targetDeployment)
