@@ -342,20 +342,28 @@ def doSingleDeployment(def projectName, def deploymentSuffix, def parksmapImageS
   }
 }
 
-def patchService(def serviceName, def dcName) {
-
+def patchService(def serviceName, def targetDeployment) {
+  def svc = openshift.selector('svc', serviceName)
+  svc.spec.selector.deploymentConfig = "$baseDcName-$targetDeployment"
+  openshift.apply(svc)
 }
 
 def patchRoute(def routeName, def serviceName) {
-
+  def route = openshift.selector('route', routeName)
+  reoute.spec.to.name = serviceName
+  openshift.apply(route)
 }
 
 def doBlueGreenDeployment(def projectName, def deploymentSuffix, def parksmapImageStramTag, def nationalparksImageStreamTag, def mlbparksImageStreamTag) {
   openshift.withProject( projectName ) {
-    def targetDeployment = 'blue'
-
+    //Use any of them because they will all changed at the same time and, if not, they will be sync in the next deployment.
+    def svc = openshift.selector('svc', 'nationalparks' + deploymentSuffix)
+    def targetDeployment = svc.spec.selector.deploymentConfig.endsWith('green') ? 'blue' : 'green'
     // Decide if the target deployment has to be green
 
     doSingleDeployment(projectName, "$deploymentSuffix-$targetDeployment", parksmapImageStramTag, nationalparksImageStreamTag, mlbparksImageStreamTag)
+    patchService('nationalparks' + deploymentSuffix, 'nationalparks' + deploymentSuffix + '-' + targetDeployment)
+    patchService('mlbparks' + deploymentSuffix, 'mlbparks' + deploymentSuffix + '-' + targetDeployment)
+    patchRoute('parksmap' + deploymentSuffix, 'parksmap' + deploymentSuffix + '-' + targetDeployment)
   }
 }
