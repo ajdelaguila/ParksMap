@@ -40,9 +40,6 @@ node('maven') {
 
     def imageStreamsPreffix = "$env.JOB_NAME-$env.BUILD_NUMBER"
 
-    appVersion = '1.0.0-54-g8d0890a'
-    doBlueGreenDeployment(openshiftLiveProjectName, '', openshiftDockgerRegistryUrl + openshiftLiveProjectName + '/parksmap:' + appVersion, openshiftDockgerRegistryUrl + openshiftLiveProjectName + '/nationalparks:' + appVersion, openshiftDockgerRegistryUrl + openshiftLiveProjectName + '/mlbparks:' + appVersion)
-input "ENOUGH!!!"
     // Start session with the service account jenkins which is the one configured by default for this builder
     openshift.withCluster() {
       stage('Checkout code') {
@@ -173,6 +170,12 @@ input "ENOUGH!!!"
 
       stage('Running integration tests') {
         // Run integration tests in DEV
+        openshift.withProject( openshiftDevProjectName ) {
+          def parksmapUrl = openshift.selector('route', 'parksmap').object().spec.host
+          def nationalparksUrl = openshift.selector('route', 'nationalparks').object().spec.host
+          def mlbparksUrl = openshift.selector('route', 'mlbparks').object().spec.host
+          runIntegrationTests(parksmapFolder, settingsFilename, sonarUrl, sonarToken, parksmapUrl, nationalparksUrl, mlbparksUrl)
+        }
       }
 
       stage('Deploy to TEST') {
@@ -191,6 +194,12 @@ input "ENOUGH!!!"
 
       stage('Running smoke tests') {
         // Run integration tests in TEST
+        openshift.withProject( openshiftTestProjectName ) {
+          def parksmapUrl = openshift.selector('route', 'parksmap').object().spec.host
+          def nationalparksUrl = openshift.selector('route', 'nationalparks').object().spec.host
+          def mlbparksUrl = openshift.selector('route', 'mlbparks').object().spec.host
+          runIntegrationTests(parksmapFolder, settingsFilename, sonarUrl, sonarToken, parksmapUrl, nationalparksUrl, mlbparksUrl)
+        }
       }
 
       stage('Deploy to LIVE') {
@@ -209,6 +218,12 @@ input "ENOUGH!!!"
 
       stage('Running smoke tests') {
         // Run integration tests in LIVE
+        openshift.withProject( openshiftLiveProjectName ) {
+          def parksmapUrl = openshift.selector('route', 'parksmap').object().spec.host
+          def nationalparksUrl = openshift.selector('route', 'nationalparks').object().spec.host
+          def mlbparksUrl = openshift.selector('route', 'mlbparks').object().spec.host
+          runIntegrationTests(parksmapFolder, settingsFilename, sonarUrl, sonarToken, parksmapUrl, nationalparksUrl, mlbparksUrl)
+        }
       }
     }
   }
@@ -257,13 +272,29 @@ def runUnitTests(def appFolder, def settingsFilename, def sonarUrl, def sonarTok
   dir (appFolder) {
     try {
       sh """
-        mvn -s $settingsFilename test -P coverage
+        mvn -s $settingsFilename test
       """
     }
     finally {
       junit 'target/*reports/**/*.xml'
       sh """
         mvn -s $settingsFilename sonar:sonar -Dsonar.host.url=$sonarUrl -Dsonar.login=$sonarToken -Dsonar.jacoco.reportPaths=target/coverage-reports/jacoco-ut.exec
+      """
+    }
+  }
+}
+
+def runIntegrationTests(def appFolder, def settingsFilename, def sonarUrl, def sonarToken, def parksmapUrl, def nationalparksUrl, def mlbparksUrl) {
+  dir (appFolder) {
+    try {
+    sh """
+      mvn -s $settingsFilename clean verify -Dnationalparks.base.url="$nationalparksUrl" -Dmlbparks.base.url="$mlbparksUrl" -Dparksmap.base.url="$parksmapUrl"
+    """
+    }
+    finally {
+      // junit 'target/*reports/**/*.xml'
+      sh """
+        mvn -s $settingsFilename sonar:sonar -Dsonar.host.url=$sonarUrl -Dsonar.login=$sonarToken -Dsonar.jacoco.reportPaths=target/coverage-reports/jacoco-it.exec
       """
     }
   }
