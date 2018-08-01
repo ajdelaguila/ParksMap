@@ -171,9 +171,9 @@ node('maven') {
       stage('Running integration tests') {
         // Run integration tests in DEV
         openshift.withProject( openshiftDevProjectName ) {
-          def parksmapUrl = openshift.selector('route', 'parksmap').object().spec.host
-          def nationalparksUrl = openshift.selector('route', 'nationalparks').object().spec.host
-          def mlbparksUrl = openshift.selector('route', 'mlbparks').object().spec.host
+          def parksmapUrl = 'http://' + openshift.selector('route', 'parksmap').object().spec.host
+          def nationalparksUrl = 'http://' + openshift.selector('route', 'nationalparks').object().spec.host
+          def mlbparksUrl = 'http://' + openshift.selector('route', 'mlbparks').object().spec.host
           runIntegrationTests(parksmapFolder, settingsFilename, sonarUrl, sonarToken, parksmapUrl, nationalparksUrl, mlbparksUrl)
         }
       }
@@ -195,9 +195,9 @@ node('maven') {
       stage('Running smoke tests') {
         // Run integration tests in TEST
         openshift.withProject( openshiftTestProjectName ) {
-          def parksmapUrl = openshift.selector('route', 'parksmap').object().spec.host
-          def nationalparksUrl = openshift.selector('route', 'nationalparks').object().spec.host
-          def mlbparksUrl = openshift.selector('route', 'mlbparks').object().spec.host
+          def parksmapUrl = 'http://' + openshift.selector('route', 'parksmap').object().spec.host
+          def nationalparksUrl = 'http://' + openshift.selector('route', 'nationalparks').object().spec.host
+          def mlbparksUrl = 'http://' + openshift.selector('route', 'mlbparks').object().spec.host
           runIntegrationTests(parksmapFolder, settingsFilename, sonarUrl, sonarToken, parksmapUrl, nationalparksUrl, mlbparksUrl)
         }
       }
@@ -219,9 +219,9 @@ node('maven') {
       stage('Running smoke tests') {
         // Run integration tests in LIVE
         openshift.withProject( openshiftLiveProjectName ) {
-          def parksmapUrl = openshift.selector('route', 'parksmap').object().spec.host
-          def nationalparksUrl = openshift.selector('route', 'nationalparks').object().spec.host
-          def mlbparksUrl = openshift.selector('route', 'mlbparks').object().spec.host
+          def parksmapUrl = 'http://' + openshift.selector('route', 'parksmap').object().spec.host
+          def nationalparksUrl = 'http://' + openshift.selector('route', 'nationalparks').object().spec.host
+          def mlbparksUrl = 'http://' + openshift.selector('route', 'mlbparks').object().spec.host
           runIntegrationTests(parksmapFolder, settingsFilename, sonarUrl, sonarToken, parksmapUrl, nationalparksUrl, mlbparksUrl)
         }
       }
