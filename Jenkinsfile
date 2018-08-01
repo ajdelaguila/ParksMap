@@ -280,6 +280,7 @@ def runUnitTests(def appFolder, def settingsFilename, def sonarUrl, def sonarTok
       sh """
         mvn -s $settingsFilename sonar:sonar -Dsonar.host.url=$sonarUrl -Dsonar.login=$sonarToken -Dsonar.jacoco.reportPaths=target/coverage-reports/jacoco-ut.exec
       """
+      jacoco(execPattern: 'target/**/*.exec')
     }
   }
 }
